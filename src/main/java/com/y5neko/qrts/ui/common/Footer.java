@@ -1,4 +1,4 @@
-package com.y5neko.template.ui.common;
+package com.y5neko.qrts.ui.common;
 
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;

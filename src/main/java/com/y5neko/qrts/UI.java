@@ -1,8 +1,8 @@
-package com.y5neko.template;
+package com.y5neko.qrts;
 
-import com.y5neko.template.ui.common.Center;
-import com.y5neko.template.ui.common.Footer;
-import com.y5neko.template.ui.common.Header;
+import com.y5neko.qrts.ui.common.Center;
+import com.y5neko.qrts.ui.common.Footer;
+import com.y5neko.qrts.ui.common.Header;
 import javafx.application.Application;
 import javafx.geometry.Insets;
 import javafx.scene.Cursor;
@@ -13,7 +13,7 @@ import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 
-import static com.y5neko.template.config.GlobalVariable.icon;
+import static com.y5neko.qrts.config.GlobalVariable.icon;
 
 public class UI extends Application {
     // 设置一个BorderPane作为根视图

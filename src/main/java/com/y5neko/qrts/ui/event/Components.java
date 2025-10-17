@@ -1,4 +1,4 @@
-package com.y5neko.template.ui.event;
+package com.y5neko.qrts.ui.event;
 
 import javafx.application.Platform;
 import javafx.embed.swing.SwingFXUtils;
@@ -17,7 +17,7 @@ import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.image.BufferedImage;
 
-import static com.y5neko.template.config.GlobalVariable.icon;
+import static com.y5neko.qrts.config.GlobalVariable.icon;
 
 public class Components {
     /**

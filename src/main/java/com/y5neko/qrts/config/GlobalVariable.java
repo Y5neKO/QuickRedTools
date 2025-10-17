@@ -1,4 +1,4 @@
-package com.y5neko.template.config;
+package com.y5neko.qrts.config;
 
 import javafx.scene.image.Image;
 

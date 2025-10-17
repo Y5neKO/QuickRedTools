@@ -1,6 +1,7 @@
-package com.y5neko.template.ui.common;
+package com.y5neko.qrts.ui.common;
 
-import com.y5neko.template.ui.event.Components;
+import com.y5neko.qrts.ui.dialog.AboutDialog;
+import com.y5neko.qrts.ui.event.Components;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -15,7 +16,10 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.stage.Stage;
 
-import static com.y5neko.template.config.GlobalVariable.icon;
+import java.awt.Desktop;
+import java.net.URI;
+
+import static com.y5neko.qrts.config.GlobalVariable.icon;
 
 public class Header {
     private MenuBar menuBar;
@@ -49,7 +53,7 @@ public class Header {
         gridPaneToolBar.add(toolBox, 0, 0, 1, 1);
         GridPane.setHalignment(toolBox, HPos.LEFT);
         // 设置第二个网格为标题
-        Label titleLabel = new Label("Y5neKO UI Template via JavaFX");
+        Label titleLabel = new Label("QuickRedTools");
         titleLabel.setFont(new Font("Consolas Bold", 20));
 
         gridPaneToolBar.add(titleLabel, 1, 0, 1, 1);
@@ -101,35 +105,36 @@ public class Header {
         menuBar = new MenuBar();
         menuBar.setStyle("-fx-background-color: transparent;");
         menuBar.setPadding(new Insets(0));
-        Menu settingMenu = new Menu("设置");
+        // Menu settingMenu = new Menu("设置");
         Menu helpMenu = new Menu("帮助");
-        menuBar.getMenus().addAll(settingMenu, helpMenu);
+        menuBar.getMenus().addAll(helpMenu);
+        // ----------设置菜单暂时注释----------
+        /*
         // ----------第一个按钮----------
         MenuItem themeSettingProxyButton = new MenuItem("主题设置(暂不支持)");
         settingMenu.getItems().addAll(themeSettingProxyButton);
         themeSettingProxyButton.setOnAction(event -> System.out.println("主题设置"));
+        */
         // ----------第二个按钮----------
         MenuItem aboutButton = new MenuItem("关于");
         helpMenu.getItems().addAll(aboutButton);
         aboutButton.setOnAction(event -> {
-//            try {
-//                new AboutStage();
-//            } catch (IOException e) {
-//                throw new RuntimeException(e);
-//            }
+            new AboutDialog().show();
         });
         // ----------第三个按钮----------
         MenuItem checkUpdateButton = new MenuItem("检查更新");
         helpMenu.getItems().add(checkUpdateButton);
         checkUpdateButton.setOnAction(event -> {
-//            new CheckVersionStage(Components.checkVersion());
+            openWebPage("https://github.com/Y5neKO/QuickRedTools/releases");
         });
         // ----------第四个按钮----------
+        /*
         MenuItem pluginsButton = new MenuItem("插件");
         pluginsButton.setOnAction(event -> {
 //            new PluginsStage(pluginInfos);
         });
         settingMenu.getItems().add(pluginsButton);
+        */
     }
 
     /**
@@ -155,6 +160,22 @@ public class Header {
         if (stage != null) {
             stage.setX(newX);
             stage.setY(newY);
+        }
+    }
+
+    /**
+     * 打开网页链接
+     * @param url 要打开的网址
+     */
+    private void openWebPage(String url) {
+        try {
+            if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
+                Desktop.getDesktop().browse(new URI(url));
+            } else {
+                System.err.println("不支持打开网页操作");
+            }
+        } catch (Exception e) {
+            System.err.println("无法打开网页: " + e.getMessage());
         }
     }
 }
