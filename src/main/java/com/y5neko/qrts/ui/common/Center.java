@@ -32,6 +32,16 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class Center {
+    // 全局字体配置
+    private static final Font FONT_TITLE = Font.font("Microsoft YaHei", FontWeight.BOLD, 16);
+    private static final Font FONT_CATEGORY_TITLE = Font.font("Microsoft YaHei", FontWeight.BOLD, 14);
+    private static final Font FONT_CATEGORY_DESC = Font.font("Microsoft YaHei", 12);
+    private static final Font FONT_TOOL_NAME = Font.font("Microsoft YaHei", FontWeight.BOLD, 12);
+    private static final Font FONT_TOOL_DESC = Font.font("Microsoft YaHei", 10);
+    private static final Font FONT_STATUS = Font.font("Microsoft YaHei", 11);
+    private static final Font FONT_BUTTON = Font.font("Microsoft YaHei", 12);
+    private static final Font FONT_LABEL = Font.font("Microsoft YaHei", 12);
+
     private DataManager dataManager;
     private ToolLauncher toolLauncher;
     private Map<String, VBox> categoryPanes;
@@ -112,7 +122,7 @@ public class Center {
         toolBar.setAlignment(Pos.CENTER_LEFT);
 
         Label title = new Label("快速启动工具");
-        title.setFont(Font.font("System", FontWeight.BOLD, 16));
+        title.setFont(FONT_TITLE);
 
         // 搜索框
         searchField = new TextField();
@@ -155,23 +165,28 @@ public class Center {
 
         Button refreshBtn = new Button("刷新");
         refreshBtn.setOnAction(e -> refreshToolDisplay());
+        refreshBtn.setFont(FONT_BUTTON);
         refreshBtn.setStyle("-fx-background-color: #f8f9fa; -fx-border-color: #ddd; -fx-border-radius: 4; -fx-background-radius: 4; -fx-border-width: 1; -fx-focus-color: transparent; -fx-faint-focus-color: transparent; -fx-padding: 8 16px; -fx-cursor: hand;");
 
         Button manageEnvBtn = new Button("环境配置");
         manageEnvBtn.setOnAction(e -> new EnvironmentDialog(this::refreshToolDisplay).show());
+        manageEnvBtn.setFont(FONT_BUTTON);
         manageEnvBtn.setStyle("-fx-background-color: #f8f9fa; -fx-border-color: #ddd; -fx-border-radius: 4; -fx-background-radius: 4; -fx-border-width: 1; -fx-focus-color: transparent; -fx-faint-focus-color: transparent; -fx-padding: 8 16px; -fx-cursor: hand;");
 
         Button manageToolsBtn = new Button("工具管理");
         manageToolsBtn.setOnAction(e -> new ToolDialog(this::refreshToolDisplay).show());
+        manageToolsBtn.setFont(FONT_BUTTON);
         manageToolsBtn.setStyle("-fx-background-color: #f8f9fa; -fx-border-color: #ddd; -fx-border-radius: 4; -fx-background-radius: 4; -fx-border-width: 1; -fx-focus-color: transparent; -fx-faint-focus-color: transparent; -fx-padding: 8 16px; -fx-cursor: hand;");
 
         // 添加折叠/展开按钮
         Button expandAllBtn = new Button("全部展开");
         expandAllBtn.setOnAction(e -> expandAllCategories());
+        expandAllBtn.setFont(FONT_BUTTON);
         expandAllBtn.setStyle("-fx-background-color: #f8f9fa; -fx-border-color: #ddd; -fx-border-radius: 4; -fx-background-radius: 4; -fx-border-width: 1; -fx-focus-color: transparent; -fx-faint-focus-color: transparent; -fx-padding: 8 16px; -fx-cursor: hand;");
 
         Button collapseAllBtn = new Button("全部折叠");
         collapseAllBtn.setOnAction(e -> collapseAllCategories());
+        collapseAllBtn.setFont(FONT_BUTTON);
         collapseAllBtn.setStyle("-fx-background-color: #f8f9fa; -fx-border-color: #ddd; -fx-border-radius: 4; -fx-background-radius: 4; -fx-border-width: 1; -fx-focus-color: transparent; -fx-faint-focus-color: transparent; -fx-padding: 8 16px; -fx-cursor: hand;");
 
         // 添加按钮悬停效果
@@ -206,11 +221,13 @@ public class Center {
 
         // 状态标签
         Label statusLabel = new Label("运行状态: ");
-        statusLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 12px; -fx-text-fill: #333;");
+        statusLabel.setFont(FONT_STATUS);
+        statusLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: #333;");
 
         // 工具信息显示区域
         statusContent = new Label();
-        statusContent.setStyle("-fx-font-size: 12px; -fx-text-fill: #666;");
+        statusContent.setFont(FONT_STATUS);
+        statusContent.setStyle("-fx-text-fill: #666;");
         HBox.setHgrow(statusContent, Priority.ALWAYS);
 
         // 控制按钮区域
@@ -218,14 +235,16 @@ public class Center {
         controlBox.setAlignment(Pos.CENTER_RIGHT);
 
         Button toggleBtn = new Button(statusBarVisible ? "隐藏" : "显示");
-        toggleBtn.setStyle("-fx-background-color: #6c757d; -fx-text-fill: white; -fx-border-radius: 3; -fx-background-radius: 3; -fx-cursor: hand; -fx-padding: 4 10px; -fx-font-size: 11px;");
+        toggleBtn.setFont(FONT_BUTTON);
+        toggleBtn.setStyle("-fx-background-color: #6c757d; -fx-text-fill: white; -fx-border-radius: 3; -fx-background-radius: 3; -fx-cursor: hand; -fx-padding: 4 10px;");
         toggleBtn.setOnAction(e -> {
             toggleStatusBar();
             toggleBtn.setText(statusBarVisible ? "隐藏" : "显示");
         });
 
         Button clearBtn = new Button("清理");
-        clearBtn.setStyle("-fx-background-color: #dc3545; -fx-text-fill: white; -fx-border-radius: 3; -fx-background-radius: 3; -fx-cursor: hand; -fx-padding: 4 10px; -fx-font-size: 11px;");
+        clearBtn.setFont(FONT_BUTTON);
+        clearBtn.setStyle("-fx-background-color: #dc3545; -fx-text-fill: white; -fx-border-radius: 3; -fx-background-radius: 3; -fx-cursor: hand; -fx-padding: 4 10px;");
         clearBtn.setOnAction(e -> clearCompletedTools());
 
         controlBox.getChildren().addAll(toggleBtn, clearBtn);
@@ -422,7 +441,8 @@ public class Center {
 
         if (allCategories.isEmpty()) {
             Label noCategoryLabel = new Label("暂无工具分类，请先添加工具分类");
-            noCategoryLabel.setStyle("-fx-text-fill: #666; -fx-font-size: 14px;");
+            noCategoryLabel.setFont(FONT_LABEL);
+            noCategoryLabel.setStyle("-fx-text-fill: #666; -fx-focus-color: transparent; -fx-faint-focus-color: transparent;");
             mainContent.getChildren().add(noCategoryLabel);
             return;
         }
@@ -430,7 +450,8 @@ public class Center {
         // 显示搜索结果提示
         if (!searchText.isEmpty()) {
             Label searchResultLabel = new Label("搜索结果: '" + searchText + "' (找到 " + filteredTools.size() + " 个工具)");
-            searchResultLabel.setStyle("-fx-text-fill: #4a90e2; -fx-font-size: 12px; -fx-font-weight: bold;");
+            searchResultLabel.setFont(FONT_LABEL);
+            searchResultLabel.setStyle("-fx-text-fill: #4a90e2; -fx-font-weight: bold; -fx-focus-color: transparent; -fx-faint-focus-color: transparent;");
             mainContent.getChildren().add(searchResultLabel);
         }
 
@@ -450,7 +471,8 @@ public class Center {
         // 如果搜索后没有找到工具，显示提示
         if (!searchText.isEmpty() && !hasVisibleTools) {
             Label noResultLabel = new Label("未找到匹配的工具，请尝试其他关键词");
-            noResultLabel.setStyle("-fx-text-fill: #999; -fx-font-size: 14px;");
+            noResultLabel.setFont(FONT_LABEL);
+            noResultLabel.setStyle("-fx-text-fill: #999; -fx-focus-color: transparent; -fx-faint-focus-color: transparent;");
             mainContent.getChildren().add(noResultLabel);
         }
 
@@ -458,13 +480,15 @@ public class Center {
         boolean hasUncategorizedTools = allTools.stream().anyMatch(tool -> tool.getCategoryId() == null);
         if (hasUncategorizedTools) {
             Label uncategorizedLabel = new Label("存在未分类的工具，请在工具管理中为工具指定分类");
-            uncategorizedLabel.setStyle("-fx-text-fill: #ff6600; -fx-font-size: 12px;");
+            uncategorizedLabel.setFont(FONT_LABEL);
+            uncategorizedLabel.setStyle("-fx-text-fill: #ff6600; -fx-focus-color: transparent; -fx-faint-focus-color: transparent;");
             mainContent.getChildren().add(uncategorizedLabel);
         }
 
         if (allTools.isEmpty()) {
             Label noToolLabel = new Label("暂无工具，请通过工具管理添加工具");
-            noToolLabel.setStyle("-fx-text-fill: #666; -fx-font-size: 14px;");
+            noToolLabel.setFont(FONT_LABEL);
+            noToolLabel.setStyle("-fx-text-fill: #666; -fx-focus-color: transparent; -fx-faint-focus-color: transparent;");
             mainContent.getChildren().add(noToolLabel);
         }
     }
@@ -519,7 +543,7 @@ public class Center {
 
         // 分类标题
         Label categoryLabel = new Label(category.getName());
-        categoryLabel.setFont(Font.font("System", FontWeight.BOLD, 14));
+        categoryLabel.setFont(FONT_CATEGORY_TITLE);
         categoryLabel.setStyle("-fx-text-fill: #333; -fx-focus-color: transparent; -fx-faint-focus-color: transparent;");
         categoryLabel.setFocusTraversable(false);
 
@@ -535,7 +559,8 @@ public class Center {
 
         if (categoryTools.isEmpty()) {
             Label noToolLabel = new Label("该分类下暂无工具");
-            noToolLabel.setStyle("-fx-text-fill: #999; -fx-font-size: 12px;");
+            noToolLabel.setFont(FONT_CATEGORY_DESC);
+            noToolLabel.setStyle("-fx-text-fill: #999; -fx-focus-color: transparent; -fx-faint-focus-color: transparent;");
             toolFlowPane.getChildren().add(noToolLabel);
         } else {
             for (ToolItem tool : categoryTools) {
@@ -548,7 +573,8 @@ public class Center {
         VBox contentBox = new VBox(5);
         if (category.getDescription() != null && !category.getDescription().trim().isEmpty()) {
             Label descLabel = new Label(category.getDescription());
-            descLabel.setStyle("-fx-text-fill: #666; -fx-font-size: 12px; -fx-focus-color: transparent; -fx-faint-focus-color: transparent;");
+            descLabel.setFont(FONT_CATEGORY_DESC);
+            descLabel.setStyle("-fx-text-fill: #666; -fx-focus-color: transparent; -fx-faint-focus-color: transparent;");
             descLabel.setFocusTraversable(false);
             contentBox.getChildren().add(descLabel);
         }
@@ -623,7 +649,7 @@ public class Center {
 
         // 工具名称
         Label nameLabel = new Label(tool.getName());
-        nameLabel.setFont(Font.font("System", FontWeight.BOLD, 12));
+        nameLabel.setFont(FONT_TOOL_NAME);
         nameLabel.setStyle("-fx-text-fill: #333; -fx-focus-color: transparent; -fx-faint-focus-color: transparent;");
         nameLabel.setWrapText(true);
         nameLabel.setFocusTraversable(false);
@@ -632,13 +658,15 @@ public class Center {
         Label descLabel = new Label();
         if (tool.getDescription() != null && !tool.getDescription().trim().isEmpty()) {
             descLabel.setText(tool.getDescription());
-            descLabel.setStyle("-fx-text-fill: #666; -fx-font-size: 10px; -fx-focus-color: transparent; -fx-faint-focus-color: transparent;");
+            descLabel.setFont(FONT_TOOL_DESC);
+            descLabel.setStyle("-fx-text-fill: #666; -fx-focus-color: transparent; -fx-faint-focus-color: transparent;");
             descLabel.setWrapText(true);
             descLabel.setFocusTraversable(false);
         }
 
         // 启动按钮
         Button launchBtn = new Button("启动");
+        launchBtn.setFont(FONT_BUTTON);
         launchBtn.setStyle("-fx-background-color: #4a90e2; -fx-text-fill: white; -fx-border-radius: 3; -fx-background-radius: 3; -fx-focus-color: transparent; -fx-faint-focus-color: transparent; -fx-focus-traversable: false;");
         launchBtn.setFocusTraversable(false);
         launchBtn.setOnAction(e -> launchTool(tool));
