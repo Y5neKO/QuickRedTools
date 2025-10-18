@@ -392,14 +392,9 @@ public class Center {
         // 显示分类和过滤后的工具
         boolean hasVisibleTools = false;
         for (ToolCategory category : allCategories) {
-            VBox categoryPane = createCategoryPane(category, filteredTools);
-            mainContent.getChildren().add(categoryPane);
-
-            // 检查该分类是否有工具
-            List<ToolItem> categoryTools = filteredTools.stream()
-                    .filter(tool -> belongsToCategory(tool, category))
-                    .collect(Collectors.toList());
-            if (!categoryTools.isEmpty()) {
+            VBox categoryPane = createCategoryPane(category, filteredTools, searchText);
+            if (categoryPane != null) {
+                mainContent.getChildren().add(categoryPane);
                 hasVisibleTools = true;
             }
         }
@@ -448,7 +443,17 @@ public class Center {
                 .collect(Collectors.toList());
     }
 
-    private VBox createCategoryPane(ToolCategory category, List<ToolItem> allTools) {
+    private VBox createCategoryPane(ToolCategory category, List<ToolItem> allTools, String searchText) {
+        // 筛选属于当前分类的工具
+        List<ToolItem> categoryTools = allTools.stream()
+                .filter(tool -> belongsToCategory(tool, category))
+                .collect(Collectors.toList());
+
+        // 如果是在搜索状态下且该分类没有工具，返回null
+        if (!searchText.isEmpty() && categoryTools.isEmpty()) {
+            return null;
+        }
+
         VBox categoryPane = new VBox(10);
         categoryPane.setPadding(new Insets(15));
         categoryPane.setStyle("-fx-background-color: white; -fx-border-color: #ddd; -fx-border-radius: 5; -fx-background-radius: 5; -fx-border-width: 1; -fx-focus-color: transparent; -fx-faint-focus-color: transparent; -fx-focus-traversable: false;");
@@ -476,11 +481,6 @@ public class Center {
         toolFlowPane.setPadding(new Insets(10, 0, 0, 0));
         toolFlowPane.setStyle("-fx-focus-color: transparent; -fx-faint-focus-color: transparent; -fx-border-color: transparent;");
         toolFlowPane.setFocusTraversable(false);
-
-        // 筛选属于当前分类的工具
-        List<ToolItem> categoryTools = allTools.stream()
-                .filter(tool -> belongsToCategory(tool, category))
-                .collect(Collectors.toList());
 
         if (categoryTools.isEmpty()) {
             Label noToolLabel = new Label("该分类下暂无工具");
