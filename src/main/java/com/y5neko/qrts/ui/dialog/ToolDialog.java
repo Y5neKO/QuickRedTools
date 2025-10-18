@@ -83,17 +83,21 @@ public class ToolDialog {
 
         TableColumn<ToolCategory, String> idCol = new TableColumn<>("ID");
         idCol.setCellValueFactory(data -> new javafx.beans.property.SimpleStringProperty(data.getValue().getId()));
-        idCol.setPrefWidth(100);
+        idCol.setPrefWidth(80);
+
+        TableColumn<ToolCategory, String> sortCol = new TableColumn<>("排序");
+        sortCol.setCellValueFactory(data -> new javafx.beans.property.SimpleStringProperty(String.valueOf(data.getValue().getSortOrder())));
+        sortCol.setPrefWidth(60);
 
         TableColumn<ToolCategory, String> nameCol = new TableColumn<>("分类名称");
         nameCol.setCellValueFactory(data -> new javafx.beans.property.SimpleStringProperty(data.getValue().getName()));
-        nameCol.setPrefWidth(150);
+        nameCol.setPrefWidth(120);
 
         TableColumn<ToolCategory, String> descCol = new TableColumn<>("描述");
         descCol.setCellValueFactory(data -> new javafx.beans.property.SimpleStringProperty(data.getValue().getDescription()));
-        descCol.setPrefWidth(300);
+        descCol.setPrefWidth(200);
 
-        categoryTable.getColumns().addAll(idCol, nameCol, descCol);
+        categoryTable.getColumns().addAll(idCol, sortCol, nameCol, descCol);
         loadCategories(categoryTable);
 
         // 分类操作按钮
@@ -101,6 +105,8 @@ public class ToolDialog {
         Button addCategoryBtn = new Button("添加分类");
         Button editCategoryBtn = new Button("编辑分类");
         Button deleteCategoryBtn = new Button("删除分类");
+        Button moveUpBtn = new Button("上移");
+        Button moveDownBtn = new Button("下移");
 
         addCategoryBtn.setOnAction(e -> showCategoryEditDialog(null, categoryTable));
         editCategoryBtn.setOnAction(e -> {
@@ -123,7 +129,10 @@ public class ToolDialog {
             }
         });
 
-        categoryButtonBox.getChildren().addAll(addCategoryBtn, editCategoryBtn, deleteCategoryBtn);
+        moveUpBtn.setOnAction(e -> moveCategory(categoryTable, true));
+        moveDownBtn.setOnAction(e -> moveCategory(categoryTable, false));
+
+        categoryButtonBox.getChildren().addAll(addCategoryBtn, editCategoryBtn, deleteCategoryBtn, moveUpBtn, moveDownBtn);
         categoryButtonBox.setAlignment(Pos.CENTER_LEFT);
 
         pane.getChildren().addAll(categoryTable, categoryButtonBox);
@@ -308,11 +317,19 @@ public class ToolDialog {
             if (dialogButton == saveButtonType) {
                 ToolCategory cat = new ToolCategory();
                 if (category != null) {
-                    // 编辑现有分类，使用原ID
+                    // 编辑现有分类，使用原ID和原sortOrder
                     cat.setId(idField.getText());
+                    cat.setSortOrder(category.getSortOrder());
                 } else {
-                    // 新建分类，自动生成ID
+                    // 新建分类，自动生成ID和默认sortOrder
                     cat.setId("cat-" + System.currentTimeMillis());
+                    // 设置为当前最大sortOrder + 1
+                    List<ToolCategory> existingCategories = dataManager.loadCategories();
+                    int maxSortOrder = existingCategories.stream()
+                            .mapToInt(ToolCategory::getSortOrder)
+                            .max()
+                            .orElse(0);
+                    cat.setSortOrder(maxSortOrder + 1);
                 }
                 cat.setName(nameField.getText());
                 cat.setDescription(descField.getText());
@@ -629,7 +646,10 @@ public class ToolDialog {
 
     private void loadCategories(TableView<ToolCategory> categoryTable) {
         categoryTable.getItems().clear();
-        categoryTable.getItems().addAll(dataManager.loadCategories());
+        List<ToolCategory> categories = dataManager.loadCategories();
+        // 按sortOrder排序
+        categories.sort((c1, c2) -> Integer.compare(c1.getSortOrder(), c2.getSortOrder()));
+        categoryTable.getItems().addAll(categories);
     }
 
     private void loadTools(TableView<ToolItem> toolTable) {
@@ -753,7 +773,57 @@ public class ToolDialog {
         return alert.showAndWait().get() == ButtonType.OK;
     }
 
+    private void moveCategory(TableView<ToolCategory> categoryTable, boolean moveUp) {
+        ToolCategory selected = categoryTable.getSelectionModel().getSelectedItem();
+        if (selected == null) {
+            showAlert("请先选择要移动的分类");
+            return;
+        }
+
+        List<ToolCategory> categories = categoryTable.getItems();
+        int currentIndex = categories.indexOf(selected);
+
+        int newIndex;
+        if (moveUp) {
+            newIndex = currentIndex - 1;
+            if (newIndex < 0) {
+                showAlert("已经是第一个分类，无法上移");
+                return;
+            }
+        } else {
+            newIndex = currentIndex + 1;
+            if (newIndex >= categories.size()) {
+                showAlert("已经是最后一个分类，无法下移");
+                return;
+            }
+        }
+
+        // 交换排序值
+        ToolCategory otherCategory = categories.get(newIndex);
+        int tempSort = selected.getSortOrder();
+        selected.setSortOrder(otherCategory.getSortOrder());
+        otherCategory.setSortOrder(tempSort);
+
+        // 保存到文件
+        try {
+            dataManager.saveCategories(categories);
+            // 重新加载表格数据
+            loadCategories(categoryTable);
+            // 选中移动后的项目
+            categoryTable.getSelectionModel().select(newIndex);
+            categoryTable.scrollTo(newIndex);
+            // 刷新首页显示
+            triggerRefresh();
+        } catch (Exception e) {
+            showAlert("保存分类排序失败: " + e.getMessage());
+        }
+    }
+
     private void triggerRefresh() {
+        // 调用Center的静态刷新方法
+        com.y5neko.qrts.ui.common.Center.refreshInstance();
+
+        // 如果有回调也调用（保持兼容性）
         if (refreshCallback != null) {
             refreshCallback.run();
         }

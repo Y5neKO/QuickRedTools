@@ -21,12 +21,14 @@ import javafx.animation.Timeline;
 import javafx.util.Duration;
 
 import java.io.File;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.List;
 import java.util.stream.Collectors;
 
 public class Center {
@@ -43,11 +45,39 @@ public class Center {
     private boolean statusBarVisible = true; // 状态栏是否可见
     private List<RunningToolInfo> runningTools; // 正在运行的工具信息
 
+    // 分类折叠状态管理
+    private Map<String, Boolean> categoryCollapseStates;
+    private Map<String, VBox> categoryContentBoxes;
+    private Map<String, Button> categoryCollapseButtons;
+
+    // 静态实例，用于全局刷新
+    private static Center instance;
+
     public Center() {
+        instance = this;
         dataManager = DataManager.getInstance();
         toolLauncher = ToolLauncher.getInstance();
         categoryPanes = new HashMap<>();
         runningTools = new ArrayList<>();
+
+        // 初始化分类状态管理
+        categoryCollapseStates = new HashMap<>();
+        categoryContentBoxes = new HashMap<>();
+        categoryCollapseButtons = new HashMap<>();
+
+        // 加载保存的折叠状态
+        loadCategoryCollapseStates();
+    }
+
+    /**
+     * 静态方法，用于全局刷新首页
+     */
+    public static void refreshInstance() {
+        if (instance != null) {
+            Platform.runLater(() -> {
+                instance.refreshToolDisplay();
+            });
+        }
     }
 
     public VBox getCenterBox(){
@@ -135,6 +165,15 @@ public class Center {
         manageToolsBtn.setOnAction(e -> new ToolDialog(this::refreshToolDisplay).show());
         manageToolsBtn.setStyle("-fx-background-color: #f8f9fa; -fx-border-color: #ddd; -fx-border-radius: 4; -fx-background-radius: 4; -fx-border-width: 1; -fx-focus-color: transparent; -fx-faint-focus-color: transparent; -fx-padding: 8 16px; -fx-cursor: hand;");
 
+        // 添加折叠/展开按钮
+        Button expandAllBtn = new Button("全部展开");
+        expandAllBtn.setOnAction(e -> expandAllCategories());
+        expandAllBtn.setStyle("-fx-background-color: #f8f9fa; -fx-border-color: #ddd; -fx-border-radius: 4; -fx-background-radius: 4; -fx-border-width: 1; -fx-focus-color: transparent; -fx-faint-focus-color: transparent; -fx-padding: 8 16px; -fx-cursor: hand;");
+
+        Button collapseAllBtn = new Button("全部折叠");
+        collapseAllBtn.setOnAction(e -> collapseAllCategories());
+        collapseAllBtn.setStyle("-fx-background-color: #f8f9fa; -fx-border-color: #ddd; -fx-border-radius: 4; -fx-background-radius: 4; -fx-border-width: 1; -fx-focus-color: transparent; -fx-faint-focus-color: transparent; -fx-padding: 8 16px; -fx-cursor: hand;");
+
         // 添加按钮悬停效果
         String buttonHoverStyle = "-fx-background-color: #e9ecef; -fx-border-color: #adb5bd; -fx-border-radius: 4; -fx-background-radius: 4; -fx-border-width: 1; -fx-focus-color: transparent; -fx-faint-focus-color: transparent; -fx-padding: 8 16px; -fx-cursor: hand;";
         String buttonNormalStyle = "-fx-background-color: #f8f9fa; -fx-border-color: #ddd; -fx-border-radius: 4; -fx-background-radius: 4; -fx-border-width: 1; -fx-focus-color: transparent; -fx-faint-focus-color: transparent; -fx-padding: 8 16px; -fx-cursor: hand;";
@@ -148,7 +187,13 @@ public class Center {
         manageToolsBtn.setOnMouseEntered(e -> manageToolsBtn.setStyle(buttonHoverStyle));
         manageToolsBtn.setOnMouseExited(e -> manageToolsBtn.setStyle(buttonNormalStyle));
 
-        toolBar.getChildren().addAll(title, new Separator(Orientation.VERTICAL), searchBox, new Separator(Orientation.VERTICAL), refreshBtn, manageEnvBtn, manageToolsBtn);
+        expandAllBtn.setOnMouseEntered(e -> expandAllBtn.setStyle(buttonHoverStyle));
+        expandAllBtn.setOnMouseExited(e -> expandAllBtn.setStyle(buttonNormalStyle));
+
+        collapseAllBtn.setOnMouseEntered(e -> collapseAllBtn.setStyle(buttonHoverStyle));
+        collapseAllBtn.setOnMouseExited(e -> collapseAllBtn.setStyle(buttonNormalStyle));
+
+        toolBar.getChildren().addAll(title, new Separator(Orientation.VERTICAL), searchBox, new Separator(Orientation.VERTICAL), refreshBtn, manageEnvBtn, manageToolsBtn, new Separator(Orientation.VERTICAL), expandAllBtn, collapseAllBtn);
 
         return toolBar;
     }
@@ -389,6 +434,9 @@ public class Center {
             mainContent.getChildren().add(searchResultLabel);
         }
 
+        // 按sortOrder排序分类
+        allCategories.sort((c1, c2) -> Integer.compare(c1.getSortOrder(), c2.getSortOrder()));
+
         // 显示分类和过滤后的工具
         boolean hasVisibleTools = false;
         for (ToolCategory category : allCategories) {
@@ -459,20 +507,23 @@ public class Center {
         categoryPane.setStyle("-fx-background-color: white; -fx-border-color: #ddd; -fx-border-radius: 5; -fx-background-radius: 5; -fx-border-width: 1; -fx-focus-color: transparent; -fx-faint-focus-color: transparent; -fx-focus-traversable: false;");
         categoryPane.setFocusTraversable(false);
 
+        // 创建标题栏（包含折叠按钮和标题）
+        HBox titleBox = new HBox(10);
+        titleBox.setAlignment(Pos.CENTER_LEFT);
+        titleBox.setStyle("-fx-cursor: hand;");
+
+        // 折叠/展开按钮
+        Button collapseButton = new Button("▼");
+        collapseButton.setStyle("-fx-background-color: transparent; -fx-border: none; -fx-text-fill: #666; -fx-font-size: 14px; -fx-cursor: hand; -fx-padding: 2px; -fx-focus-color: transparent;");
+        collapseButton.setPrefSize(20, 20);
+
         // 分类标题
         Label categoryLabel = new Label(category.getName());
         categoryLabel.setFont(Font.font("System", FontWeight.BOLD, 14));
         categoryLabel.setStyle("-fx-text-fill: #333; -fx-focus-color: transparent; -fx-faint-focus-color: transparent;");
         categoryLabel.setFocusTraversable(false);
 
-        if (category.getDescription() != null && !category.getDescription().trim().isEmpty()) {
-            Label descLabel = new Label(category.getDescription());
-            descLabel.setStyle("-fx-text-fill: #666; -fx-font-size: 12px; -fx-focus-color: transparent; -fx-faint-focus-color: transparent;");
-            descLabel.setFocusTraversable(false);
-            categoryPane.getChildren().addAll(categoryLabel, descLabel);
-        } else {
-            categoryPane.getChildren().add(categoryLabel);
-        }
+        titleBox.getChildren().addAll(collapseButton, categoryLabel);
 
         // 工具网格
         FlowPane toolFlowPane = new FlowPane();
@@ -493,7 +544,64 @@ public class Center {
             }
         }
 
-        categoryPane.getChildren().add(toolFlowPane);
+        // 添加分类描述（如果有）
+        VBox contentBox = new VBox(5);
+        if (category.getDescription() != null && !category.getDescription().trim().isEmpty()) {
+            Label descLabel = new Label(category.getDescription());
+            descLabel.setStyle("-fx-text-fill: #666; -fx-font-size: 12px; -fx-focus-color: transparent; -fx-faint-focus-color: transparent;");
+            descLabel.setFocusTraversable(false);
+            contentBox.getChildren().add(descLabel);
+        }
+        contentBox.getChildren().add(toolFlowPane);
+
+        // 添加所有组件到分类面板
+        categoryPane.getChildren().addAll(titleBox, contentBox);
+
+        // 注册分类组件到状态管理Map中
+        categoryContentBoxes.put(category.getId(), contentBox);
+        categoryCollapseButtons.put(category.getId(), collapseButton);
+
+        // 设置初始状态（从保存的状态中读取，默认为展开）
+        Boolean isCollapsed = categoryCollapseStates.get(category.getId());
+        if (isCollapsed != null && isCollapsed) {
+            // 初始状态为折叠
+            contentBox.setVisible(false);
+            contentBox.setManaged(false);
+            collapseButton.setText("▶");
+        } else {
+            // 初始状态为展开
+            contentBox.setVisible(true);
+            contentBox.setManaged(true);
+            collapseButton.setText("▼");
+        }
+
+        // 添加折叠/展开功能
+        collapseButton.setOnAction(e -> {
+            boolean currentState = contentBox.isVisible();
+            if (currentState) {
+                // 折叠
+                contentBox.setVisible(false);
+                contentBox.setManaged(false);
+                collapseButton.setText("▶");
+                categoryCollapseStates.put(category.getId(), true);
+            } else {
+                // 展开
+                contentBox.setVisible(true);
+                contentBox.setManaged(true);
+                collapseButton.setText("▼");
+                categoryCollapseStates.put(category.getId(), false);
+            }
+            // 保存折叠状态
+            saveCategoryCollapseStates();
+        });
+
+        // 点击标题栏也可以折叠/展开
+        titleBox.setOnMouseClicked(e -> collapseButton.fire());
+
+        // 按钮悬停效果
+        collapseButton.setOnMouseEntered(e -> collapseButton.setStyle("-fx-background-color: #f0f0f0; -fx-border: none; -fx-text-fill: #333; -fx-font-size: 14px; -fx-cursor: hand; -fx-padding: 2px; -fx-focus-color: transparent;"));
+        collapseButton.setOnMouseExited(e -> collapseButton.setStyle("-fx-background-color: transparent; -fx-border: none; -fx-text-fill: #666; -fx-font-size: 14px; -fx-cursor: hand; -fx-padding: 2px; -fx-focus-color: transparent;"));
+
         return categoryPane;
     }
 
@@ -854,6 +962,96 @@ public class Center {
             } else {
                 return String.format("%d秒", seconds);
             }
+        }
+    }
+
+    /**
+     * 全部展开分类
+     */
+    private void expandAllCategories() {
+        // 只操作当前已创建的分类组件
+        for (Map.Entry<String, VBox> entry : categoryContentBoxes.entrySet()) {
+            String categoryId = entry.getKey();
+            VBox contentBox = entry.getValue();
+            Button collapseButton = categoryCollapseButtons.get(categoryId);
+
+            if (contentBox != null && collapseButton != null) {
+                contentBox.setVisible(true);
+                contentBox.setManaged(true);
+                collapseButton.setText("▼");
+            }
+
+            // 更新状态
+            categoryCollapseStates.put(categoryId, false);
+        }
+
+        // 保存状态
+        saveCategoryCollapseStates();
+    }
+
+    /**
+     * 全部折叠分类
+     */
+    private void collapseAllCategories() {
+        // 只操作当前已创建的分类组件
+        for (Map.Entry<String, VBox> entry : categoryContentBoxes.entrySet()) {
+            String categoryId = entry.getKey();
+            VBox contentBox = entry.getValue();
+            Button collapseButton = categoryCollapseButtons.get(categoryId);
+
+            if (contentBox != null && collapseButton != null) {
+                contentBox.setVisible(false);
+                contentBox.setManaged(false);
+                collapseButton.setText("▶");
+            }
+
+            // 更新状态
+            categoryCollapseStates.put(categoryId, true);
+        }
+
+        // 保存状态
+        saveCategoryCollapseStates();
+    }
+
+    /**
+     * 保存分类折叠状态
+     */
+    private void saveCategoryCollapseStates() {
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            File configFile = new File("data/category_collapse_states.json");
+            File dataDir = new File("data");
+
+            // 确保数据目录存在
+            if (!dataDir.exists()) {
+                dataDir.mkdirs();
+            }
+
+            mapper.writeValue(configFile, categoryCollapseStates);
+        } catch (Exception e) {
+            System.err.println("保存分类折叠状态失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 加载分类折叠状态
+     */
+    private void loadCategoryCollapseStates() {
+        try {
+            File configFile = new File("data/category_collapse_states.json");
+
+            if (configFile.exists()) {
+                ObjectMapper mapper = new ObjectMapper();
+                TypeReference<Map<String, Boolean>> typeRef = new TypeReference<Map<String, Boolean>>() {};
+                Map<String, Boolean> loadedStates = mapper.readValue(configFile, typeRef);
+
+                if (loadedStates != null) {
+                    categoryCollapseStates.putAll(loadedStates);
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("加载分类折叠状态失败: " + e.getMessage());
+            // 加载失败时使用默认的展开状态
         }
     }
 }

@@ -167,33 +167,41 @@ public class DataManager {
     private List<ToolCategory> createAndSaveDefaultCategories() {
         List<ToolCategory> categories = new ArrayList<>();
 
-        categories.add(new ToolCategory(
+        ToolCategory devTools = new ToolCategory(
             "cat-" + System.currentTimeMillis() + "-1",
             "开发工具",
             "Java、Python、Node.js等开发相关工具",
             null
-        ));
+        );
+        devTools.setSortOrder(1);
+        categories.add(devTools);
 
-        categories.add(new ToolCategory(
+        ToolCategory sysTools = new ToolCategory(
             "cat-" + System.currentTimeMillis() + "-2",
             "系统工具",
             "系统管理和维护工具",
             null
-        ));
+        );
+        sysTools.setSortOrder(2);
+        categories.add(sysTools);
 
-        categories.add(new ToolCategory(
+        ToolCategory netTools = new ToolCategory(
             "cat-" + System.currentTimeMillis() + "-3",
             "网络工具",
             "网络调试和测试工具",
             null
-        ));
+        );
+        netTools.setSortOrder(3);
+        categories.add(netTools);
 
-        categories.add(new ToolCategory(
+        ToolCategory dbTools = new ToolCategory(
             "cat-" + System.currentTimeMillis() + "-4",
             "数据库工具",
             "数据库管理和操作工具",
             null
-        ));
+        );
+        dbTools.setSortOrder(4);
+        categories.add(dbTools);
 
         saveCategories(categories);
         return categories;

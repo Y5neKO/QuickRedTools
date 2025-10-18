@@ -8,9 +8,11 @@ public class ToolCategory {
     private String name;
     private String description;
     private String iconPath;
+    private int sortOrder;
     private List<ToolItem> tools;
 
     public ToolCategory() {
+        this.sortOrder = 0;
         this.tools = new ArrayList<>();
     }
 
@@ -19,6 +21,7 @@ public class ToolCategory {
         this.name = name;
         this.description = description;
         this.iconPath = iconPath;
+        this.sortOrder = 0;
         this.tools = new ArrayList<>();
     }
 
@@ -34,6 +37,9 @@ public class ToolCategory {
 
     public String getIconPath() { return iconPath; }
     public void setIconPath(String iconPath) { this.iconPath = iconPath; }
+
+    public int getSortOrder() { return sortOrder; }
+    public void setSortOrder(int sortOrder) { this.sortOrder = sortOrder; }
 
     public List<ToolItem> getTools() { return tools; }
     public void setTools(List<ToolItem> tools) { this.tools = tools; }
