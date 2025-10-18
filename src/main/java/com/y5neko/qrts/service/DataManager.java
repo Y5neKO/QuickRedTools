@@ -12,13 +12,16 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class DataManager {
     private static final String DATA_DIR = "data";
     private static final String ENVIRONMENTS_FILE = "environments.json";
     private static final String CATEGORIES_FILE = "categories.json";
     private static final String TOOLS_FILE = "tools.json";
+    private static final String APP_CONFIG_FILE = "app_config.json";
 
     private static DataManager instance;
     private ObjectMapper objectMapper;
@@ -315,5 +318,45 @@ public class DataManager {
 
         saveTools(tools);
         return tools;
+    }
+
+    // 应用配置管理
+    private Map<String, String> loadAppConfig() {
+        File file = new File(DATA_DIR, APP_CONFIG_FILE);
+        if (!file.exists()) {
+            return new HashMap<>();
+        }
+
+        try {
+            return objectMapper.readValue(file, new TypeReference<Map<String, String>>() {});
+        } catch (IOException e) {
+            System.err.println("Failed to load app config: " + e.getMessage());
+            return new HashMap<>();
+        }
+    }
+
+    private void saveAppConfig(Map<String, String> config) {
+        try {
+            objectMapper.writeValue(new File(DATA_DIR, APP_CONFIG_FILE), config);
+        } catch (IOException e) {
+            System.err.println("Failed to save app config: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 获取应用配置值
+     */
+    public String getAppConfig(String key) {
+        Map<String, String> config = loadAppConfig();
+        return config.get(key);
+    }
+
+    /**
+     * 设置应用配置值
+     */
+    public void setAppConfig(String key, String value) {
+        Map<String, String> config = loadAppConfig();
+        config.put(key, value);
+        saveAppConfig(config);
     }
 }

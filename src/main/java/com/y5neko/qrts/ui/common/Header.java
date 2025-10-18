@@ -1,6 +1,7 @@
 package com.y5neko.qrts.ui.common;
 
 import com.y5neko.qrts.ui.dialog.AboutDialog;
+import com.y5neko.qrts.ui.dialog.SettingsDialog;
 import com.y5neko.qrts.ui.event.Components;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
@@ -105,36 +106,29 @@ public class Header {
         menuBar = new MenuBar();
         menuBar.setStyle("-fx-background-color: transparent;");
         menuBar.setPadding(new Insets(0));
-        // Menu settingMenu = new Menu("设置");
+
+        Menu settingMenu = new Menu("设置");
         Menu helpMenu = new Menu("帮助");
-        menuBar.getMenus().addAll(helpMenu);
-        // ----------设置菜单暂时注释----------
-        /*
+        menuBar.getMenus().addAll(settingMenu, helpMenu);
+
+        // ----------设置菜单----------
+        MenuItem fontSettingButton = new MenuItem("字体设置");
+        settingMenu.getItems().addAll(fontSettingButton);
+        fontSettingButton.setOnAction(event -> new SettingsDialog().show());
+
+        // ----------帮助菜单----------
         // ----------第一个按钮----------
-        MenuItem themeSettingProxyButton = new MenuItem("主题设置(暂不支持)");
-        settingMenu.getItems().addAll(themeSettingProxyButton);
-        themeSettingProxyButton.setOnAction(event -> System.out.println("主题设置"));
-        */
-        // ----------第二个按钮----------
         MenuItem aboutButton = new MenuItem("关于");
         helpMenu.getItems().addAll(aboutButton);
         aboutButton.setOnAction(event -> {
             new AboutDialog().show();
         });
-        // ----------第三个按钮----------
+        // ----------第二个按钮----------
         MenuItem checkUpdateButton = new MenuItem("检查更新");
         helpMenu.getItems().add(checkUpdateButton);
         checkUpdateButton.setOnAction(event -> {
             openWebPage("https://github.com/Y5neKO/QuickRedTools/releases");
         });
-        // ----------第四个按钮----------
-        /*
-        MenuItem pluginsButton = new MenuItem("插件");
-        pluginsButton.setOnAction(event -> {
-//            new PluginsStage(pluginInfos);
-        });
-        settingMenu.getItems().add(pluginsButton);
-        */
     }
 
     /**

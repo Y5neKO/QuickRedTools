@@ -1,5 +1,6 @@
 package com.y5neko.qrts;
 
+import com.y5neko.qrts.config.GlobalVariable;
 import com.y5neko.qrts.ui.common.Center;
 import com.y5neko.qrts.ui.common.Footer;
 import com.y5neko.qrts.ui.common.Header;
@@ -24,6 +25,9 @@ public class UI extends Application {
 
     @Override
     public void start(Stage primaryStage) throws Exception {
+        // 初始化字体设置
+        GlobalVariable.initializeFontSettings();
+
         // =============================================================Step 1: 创建一个菜单栏=============================================================
         HBox titleBar = new Header().getTitleBar(primaryStage);
         root.setTop(titleBar);
@@ -31,7 +35,9 @@ public class UI extends Application {
 
         // =============================================================Step 2: 创建一个中间容器=============================================================
         // 设置一个VBox作为中间主要展示内容
-        VBox centerBox = new Center().getCenterBox();
+        Center centerComponent = new Center();
+        VBox centerBox = centerComponent.getCenterBox();
+        Center.setMainCenterBox(centerBox); // 设置主界面引用
         root.setCenter(centerBox);
 
 
@@ -69,8 +75,14 @@ public class UI extends Application {
         primaryStage.initStyle(StageStyle.TRANSPARENT); // 圆角|透明
         primaryStage.setScene(scene);
         primaryStage.setTitle("template");
-        primaryStage.setHeight(800);
+
+        // 设置最小窗口大小
+        primaryStage.setMinWidth(600);
+        primaryStage.setMinHeight(400);
+
+        // 设置初始窗口大小
         primaryStage.setWidth(1300);
+        primaryStage.setHeight(800);
         primaryStage.getIcons().add(icon);
         primaryStage.show();
 
@@ -82,20 +94,22 @@ public class UI extends Application {
             initWidth = primaryStage.getWidth();
             initHeight = primaryStage.getHeight();
         });
+
         scene.setOnMouseDragged(event -> {
             double deltaX = event.getScreenX() - dragStartX;
             double deltaY = event.getScreenY() - dragStartY;
 
             if (event.getSceneX() > (scene.getWidth() - 20) &&
                     event.getSceneY() > (scene.getHeight() - 20)) {
-                primaryStage.setWidth(initWidth + deltaX);
-                primaryStage.setHeight(initHeight + deltaY);
+                primaryStage.setWidth(Math.max(600, initWidth + deltaX));
+                primaryStage.setHeight(Math.max(400, initHeight + deltaY));
             } else if (event.getSceneX() > (scene.getWidth() - 5)) {
-                primaryStage.setWidth(initWidth + deltaX);
+                primaryStage.setWidth(Math.max(600, initWidth + deltaX));
             } else if (event.getSceneY() > (scene.getHeight() - 5)) {
-                primaryStage.setHeight(initHeight + deltaY);
+                primaryStage.setHeight(Math.max(400, initHeight + deltaY));
             }
         });
+
         scene.setOnMouseMoved(event -> {
             if (event.getSceneX() > (scene.getWidth() - 20) &&
                     event.getSceneY() > (scene.getHeight() - 20)) {
