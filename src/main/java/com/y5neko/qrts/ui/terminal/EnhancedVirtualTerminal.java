@@ -24,6 +24,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class EnhancedVirtualTerminal extends VBox {
     private TextArea terminalArea;
+    private TextField commandInput; // 新增：独立的命令输入框
+    private Label promptLabel; // 提示符标签
     private ExecutorService executor;
     private AtomicBoolean isRunning;
     private AtomicBoolean isExecuting; // 标记是否正在执行命令
@@ -32,21 +34,12 @@ public class EnhancedVirtualTerminal extends VBox {
     private String prompt;
     private Runnable onCloseCallback;
 
-    // Shell 进程相关
-    private Process shellProcess;
-    private PrintWriter shellWriter;
-    private volatile boolean isShellMode = false;
-    private Thread outputReaderThread;
-    private Thread errorReaderThread;
+    // 当前执行的进程
+    private volatile Process currentProcess;
 
     // 命令历史
     private List<String> commandHistory;
     private int historyIndex = -1;
-
-    // 输入缓冲
-    private StringBuilder currentInput;
-    private int cursorPosition;
-    private int inputStartPosition; // 输入开始位置（提示符之后）
 
     // 颜色标记（使用特殊字符标记）
     private static final String COLOR_RESET = "\u0000";
@@ -62,13 +55,11 @@ public class EnhancedVirtualTerminal extends VBox {
         isExecuting = new AtomicBoolean(false);
         currentOutput = new StringBuilder();
         commandHistory = new ArrayList<String>();
-        currentInput = new StringBuilder();
         workingDirectory = System.getProperty("user.home");
         prompt = buildPrompt();
 
         initializeUI();
         displayWelcomeMessage();
-        displayPrompt();
     }
 
     public EnhancedVirtualTerminal(Runnable onCloseCallback) {
@@ -76,6 +67,8 @@ public class EnhancedVirtualTerminal extends VBox {
         this.onCloseCallback = onCloseCallback;
     }
 
+    
+    
     private void initializeUI() {
         setPadding(new Insets(10));
         setSpacing(5);
@@ -83,15 +76,32 @@ public class EnhancedVirtualTerminal extends VBox {
         // 应用黑暗模式
         applyDarkMode();
 
-        // 终端显示区域（整合输入输出）
+        // 终端显示区域（仅用于显示输出）
         terminalArea = new TextArea();
-        terminalArea.setEditable(false); // 通过事件控制编辑
+        terminalArea.setEditable(false);
         terminalArea.setWrapText(true);
 
         // 应用终端区域样式
         updateTerminalAreaStyle();
 
         terminalArea.setFont(Font.font("Consolas", 14));
+
+        // 命令输入区域
+        HBox inputBox = new HBox(5);
+        inputBox.setAlignment(Pos.CENTER_LEFT);
+
+        promptLabel = new Label();
+        promptLabel.setText(prompt);
+        promptLabel.setFont(Font.font("Consolas", 14));
+        updatePromptLabelStyle(promptLabel);
+
+        commandInput = new TextField();
+        commandInput.setPromptText("输入命令...");
+        commandInput.setFont(Font.font("Consolas", 14));
+        updateInputFieldStyle(commandInput);
+
+        inputBox.getChildren().addAll(promptLabel, commandInput);
+        HBox.setHgrow(commandInput, Priority.ALWAYS);
 
         // 按钮区域
         HBox buttonBox = new HBox(10);
@@ -124,40 +134,22 @@ public class EnhancedVirtualTerminal extends VBox {
             }
         });
 
-        Button shellBtn = createStyledButton("启动 Shell");
-        updateButtonStyle(shellBtn);
-        shellBtn.setOnAction(new javafx.event.EventHandler<javafx.event.ActionEvent>() {
-            @Override
-            public void handle(javafx.event.ActionEvent e) {
-                executeCommand("shell");
-            }
-        });
+        buttonBox.getChildren().addAll(clearBtn, copyBtn, pasteBtn);
 
-        Button stopBtn = createStyledButton("停止");
-        updateButtonStyle(stopBtn);
-        stopBtn.setOnAction(new javafx.event.EventHandler<javafx.event.ActionEvent>() {
-            @Override
-            public void handle(javafx.event.ActionEvent e) {
-                stopShell();
-            }
-        });
-
-        buttonBox.getChildren().addAll(clearBtn, copyBtn, pasteBtn, shellBtn, stopBtn);
-
-        // 应用按钮容器样式
+        // 应用容器样式
+        updateInputBoxStyle(inputBox);
         updateButtonBoxStyle(buttonBox);
 
-        getChildren().addAll(terminalArea, buttonBox);
+        getChildren().addAll(terminalArea, inputBox, buttonBox);
         VBox.setVgrow(terminalArea, Priority.ALWAYS);
 
         setupEventHandlers();
 
-        // 聚焦到终端
+        // 聚焦到输入框
         Platform.runLater(new Runnable() {
             @Override
             public void run() {
-                terminalArea.requestFocus();
-                terminalArea.positionCaret(terminalArea.getLength());
+                commandInput.requestFocus();
             }
         });
     }
@@ -168,37 +160,68 @@ public class EnhancedVirtualTerminal extends VBox {
     }
 
     private void setupEventHandlers() {
-        // 键盘事件处理
-        terminalArea.setOnKeyPressed(new javafx.event.EventHandler<KeyEvent>() {
+        // 输入框键盘事件处理
+        commandInput.setOnKeyPressed(new javafx.event.EventHandler<KeyEvent>() {
             @Override
             public void handle(KeyEvent e) {
-                handleKeyPress(e);
+                // 优先处理Ctrl+C中断
+                if (e.isControlDown() && e.getCode() == KeyCode.C) {
+                    if (isExecuting.get()) {
+                        interruptCurrentCommand();
+                        e.consume();
+                        return;
+                    }
+                }
+                handleInputKeyPress(e);
             }
         });
 
-        // 防止直接编辑
-        terminalArea.textProperty().addListener(new javafx.beans.value.ChangeListener<String>() {
+        // 输入框回车事件处理
+        commandInput.setOnAction(new javafx.event.EventHandler<javafx.event.ActionEvent>() {
             @Override
-            public void changed(javafx.beans.value.ObservableValue<? extends String> observable,
-                                String oldValue, String newValue) {
-                // 如果文本被直接修改（非通过我们的方法），恢复
-                if (!isUpdatingText && newValue != null && !newValue.equals(currentOutput.toString())) {
-                    isUpdatingText = true;
-                    terminalArea.setText(currentOutput.toString());
-                    terminalArea.positionCaret(terminalArea.getLength());
-                    isUpdatingText = false;
+            public void handle(javafx.event.ActionEvent e) {
+                executeCommandFromInput();
+            }
+        });
+
+        // 添加全局键盘事件监听器
+        commandInput.getParent().setOnKeyPressed(new javafx.event.EventHandler<KeyEvent>() {
+            @Override
+            public void handle(KeyEvent e) {
+                // 全局Ctrl+C处理，无论输入框是否被禁用
+                if (e.isControlDown() && e.getCode() == KeyCode.C) {
+                    if (isExecuting.get()) {
+                        System.out.println("检测到Ctrl+C中断请求");
+                        interruptCurrentCommand();
+                        e.consume();
+                    }
                 }
             }
         });
 
-        // 点击事件 - 保持光标在末尾
+        // 确保输入框始终可以获得焦点
         terminalArea.setOnMouseClicked(new javafx.event.EventHandler<javafx.scene.input.MouseEvent>() {
             @Override
             public void handle(javafx.scene.input.MouseEvent event) {
-                Platform.runLater(new Runnable() {
+                commandInput.requestFocus();
+            }
+        });
+
+        // 添加延迟的Scene事件监听器
+        Platform.runLater(() -> {
+            javafx.scene.Scene scene = commandInput.getScene();
+            if (scene != null) {
+                scene.addEventHandler(KeyEvent.KEY_PRESSED, new javafx.event.EventHandler<KeyEvent>() {
                     @Override
-                    public void run() {
-                        terminalArea.positionCaret(terminalArea.getLength());
+                    public void handle(KeyEvent e) {
+                        // 全局Ctrl+C处理
+                        if (e.isControlDown() && e.getCode() == KeyCode.C) {
+                            if (isExecuting.get()) {
+                                System.out.println("Scene级别检测到Ctrl+C中断请求");
+                                interruptCurrentCommand();
+                                e.consume();
+                            }
+                        }
                     }
                 });
             }
@@ -207,158 +230,108 @@ public class EnhancedVirtualTerminal extends VBox {
 
     private boolean isUpdatingText = false;
 
-    private void handleKeyPress(KeyEvent e) {
-        // 如果正在执行命令，只允许 Ctrl+C
-        if (isExecuting.get() && !isShellMode) {
+    /**
+     * 处理输入框键盘事件
+     */
+    private void handleInputKeyPress(KeyEvent e) {
+        // 如果正在执行命令，只允许 Ctrl+C 中断
+        if (isExecuting.get()) {
             if (e.isControlDown() && e.getCode() == KeyCode.C) {
-                appendOutput("\n^C\n", "");
-                displayPrompt();
+                interruptCurrentCommand();
             }
             e.consume();
             return;
         }
 
-        if (isShellMode && shellWriter != null) {
-            handleShellKeyPress(e);
-            return;
-        }
-
-        // 处理特殊键
-        if (e.getCode() == KeyCode.ENTER) {
-            e.consume();
-            String command = currentInput.toString().trim();
-            currentInput.setLength(0);
-            appendOutput("\n", "");
-
-            if (!command.isEmpty()) {
-                addToHistory(command);
-                executeCommand(command);
-            } else {
-                displayPrompt();
-            }
-            historyIndex = -1;
-
-        } else if (e.getCode() == KeyCode.BACK_SPACE) {
-            e.consume();
-            if (currentInput.length() > 0) {
-                currentInput.deleteCharAt(currentInput.length() - 1);
-                updateInputDisplay();
-            }
-
-        } else if (e.getCode() == KeyCode.UP) {
+        // 处理历史记录导航
+        if (e.getCode() == KeyCode.UP) {
             e.consume();
             navigateHistory(-1);
-
         } else if (e.getCode() == KeyCode.DOWN) {
             e.consume();
             navigateHistory(1);
-
         } else if (e.getCode() == KeyCode.TAB) {
             e.consume();
             handleTabCompletion();
-
-        } else if (e.getCode() == KeyCode.C && e.isControlDown()) {
+        } else if (e.isControlDown() && e.getCode() == KeyCode.C) {
             e.consume();
-            if (!isExecuting.get()) {
-                copyContent();
-            }
-
-        } else if (e.getCode() == KeyCode.V && e.isControlDown()) {
+            copyContent(); // Ctrl+C 复制功能（在没有执行命令时）
+        } else if (e.isControlDown() && e.getCode() == KeyCode.V) {
             e.consume();
             pasteToTerminal();
-
-        } else if (e.getCode() == KeyCode.L && e.isControlDown()) {
+        } else if (e.isControlDown() && e.getCode() == KeyCode.L) {
             e.consume();
             clearTerminal();
-
-        } else if (e.getCode() == KeyCode.D && e.isControlDown()) {
-            e.consume();
-            if (isShellMode) {
-                sendToShell("\u0004");
-            }
-
-        } else if (!e.isControlDown() && !e.isAltDown() && e.getText() != null &&
-                !e.getText().isEmpty() && !e.getText().equals("\r") && !e.getText().equals("\n")) {
-            // 普通字符输入
-            e.consume();
-            currentInput.append(e.getText());
-            updateInputDisplay();
-        } else {
-            e.consume();
         }
     }
 
-    private void updateInputDisplay() {
-        // 删除当前行的输入部分
-        int currentLength = terminalArea.getLength();
-        int inputLength = currentInput.length();
-        int promptLength = prompt.length();
+    
+    /**
+     * 中断当前执行的命令
+     */
+    private void interruptCurrentCommand() {
+        System.out.println("interruptCurrentCommand 被调用");
+        appendOutput("^C\n", "warning");
 
-        // 重新构建当前行
-        String currentLine = prompt + currentInput.toString();
-
-        // 找到最后一个换行符
-        String allText = currentOutput.toString();
-        int lastNewLine = allText.lastIndexOf('\n');
-
-        if (lastNewLine >= 0) {
-            currentOutput.setLength(lastNewLine + 1);
-        } else {
-            currentOutput.setLength(0);
-        }
-
-        currentOutput.append(currentLine);
-        updateTerminalDisplay();
-    }
-
-    private void handleShellKeyPress(KeyEvent e) {
-        if (shellWriter == null) return;
-
-        String toSend = null;
-
-        if (e.getCode() == KeyCode.ENTER) {
-            toSend = currentInput.toString() + "\n";
-            appendOutput(currentInput.toString() + "\n", "");
-            currentInput.setLength(0);
-        } else if (e.getCode() == KeyCode.BACK_SPACE) {
-            if (currentInput.length() > 0) {
-                currentInput.deleteCharAt(currentInput.length() - 1);
-                toSend = "\b \b"; // 退格，空格，退格
-            }
-        } else if (e.getCode() == KeyCode.UP) {
-            toSend = "\u001b[A";
-        } else if (e.getCode() == KeyCode.DOWN) {
-            toSend = "\u001b[B";
-        } else if (e.getCode() == KeyCode.RIGHT) {
-            toSend = "\u001b[C";
-        } else if (e.getCode() == KeyCode.LEFT) {
-            toSend = "\u001b[D";
-        } else if (e.getCode() == KeyCode.TAB) {
-            toSend = "\t";
-        } else if (!e.isControlDown() && !e.isAltDown() && e.getText() != null &&
-                !e.getText().isEmpty()) {
-            toSend = e.getText();
-            currentInput.append(e.getText());
-        }
-
-        if (toSend != null) {
-            sendToShell(toSend);
-        }
-
-        e.consume();
-    }
-
-    private void sendToShell(String text) {
-        if (shellWriter != null && isShellMode) {
+        // 如果有正在执行的进程，尝试终止它
+        if (currentProcess != null && currentProcess.isAlive()) {
             try {
-                shellWriter.write(text);
-                shellWriter.flush();
-            } catch (Exception e) {
-                appendOutput("发送数据失败: " + e.getMessage() + "\n", "error");
+                System.out.println("正在终止进程");
+                // 发送中断信号
+                currentProcess.destroyForcibly();
+
+                // 等待进程结束
+                if (!currentProcess.waitFor(2, java.util.concurrent.TimeUnit.SECONDS)) {
+                    appendOutput("强制终止进程\n", "warning");
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                appendOutput("中断命令时出错\n", "error");
             }
+        } else {
+            System.out.println("没有需要终止的进程");
+        }
+
+        // 重置执行状态
+        isExecuting.set(false);
+        currentProcess = null;
+        System.out.println("重置了执行状态");
+
+        // 清空当前输入
+        commandInput.clear();
+
+        // 强制启用输入框
+        Platform.runLater(() -> {
+            commandInput.setDisable(false);
+            commandInput.requestFocus();
+            System.out.println("重新启用输入框");
+        });
+
+        // 显示新的提示符
+        displayPrompt();
+
+        appendOutput("命令已中断\n", "info");
+    }
+
+    /**
+     * 从输入框执行命令
+     */
+    private void executeCommandFromInput() {
+        String command = commandInput.getText().trim();
+        commandInput.clear();
+
+        if (!command.isEmpty()) {
+            // 显示执行的命令并执行
+            String currentPrompt = promptLabel.getText();
+            appendOutput(currentPrompt + command + "\n", "prompt");
+            addToHistory(command);
+            executeCommand(command);
         }
     }
 
+    
+    
+    
     private void addToHistory(String command) {
         if (!command.trim().isEmpty()) {
             commandHistory.add(command);
@@ -381,26 +354,23 @@ public class EnhancedVirtualTerminal extends VBox {
             historyIndex = 0;
         } else if (historyIndex >= commandHistory.size()) {
             historyIndex = commandHistory.size();
-            currentInput.setLength(0);
-            updateInputDisplay();
+            commandInput.clear();
             return;
         }
 
-        currentInput.setLength(0);
-        currentInput.append(commandHistory.get(historyIndex));
-        updateInputDisplay();
+        commandInput.setText(commandHistory.get(historyIndex));
+        commandInput.positionCaret(commandInput.getText().length());
     }
 
     private void handleTabCompletion() {
-        String current = currentInput.toString();
+        String current = commandInput.getText();
         if (current.isEmpty()) return;
 
-        String[] commonCommands = {"help", "clear", "cd", "ls", "pwd", "echo", "cat", "exit", "shell", "history"};
+        String[] commonCommands = {"help", "clear", "cd", "ls", "pwd", "echo", "cat", "exit", "history"};
         for (int i = 0; i < commonCommands.length; i++) {
             if (commonCommands[i].startsWith(current)) {
-                currentInput.setLength(0);
-                currentInput.append(commonCommands[i]);
-                updateInputDisplay();
+                commandInput.setText(commonCommands[i]);
+                commandInput.positionCaret(commandInput.getText().length());
                 break;
             }
         }
@@ -424,11 +394,7 @@ public class EnhancedVirtualTerminal extends VBox {
         }
 
         if (command.equalsIgnoreCase("exit") || command.equalsIgnoreCase("quit")) {
-            if (isShellMode) {
-                stopShell();
-            } else {
-                closeTerminal();
-            }
+            closeTerminal();
             return;
         }
 
@@ -437,12 +403,7 @@ public class EnhancedVirtualTerminal extends VBox {
             return;
         }
 
-        if (command.equalsIgnoreCase("shell") || command.equalsIgnoreCase("bash") ||
-                command.equalsIgnoreCase("sh")) {
-            startInteractiveShell();
-            return;
-        }
-
+        
         if (command.equalsIgnoreCase("history")) {
             showHistory();
             return;
@@ -452,178 +413,32 @@ public class EnhancedVirtualTerminal extends VBox {
         executeExternalCommand(command);
     }
 
-    private void startInteractiveShell() {
-        if (isShellMode) {
-            appendOutput("Shell 已在运行中\n", "warning");
-            displayPrompt();
-            return;
-        }
-
-        if (isExecuting.get()) {
-            appendOutput("正在执行其他命令，请稍候...\n", "warning");
-            displayPrompt();
-            return;
-        }
-
-        isExecuting.set(true);
-
-        executor.submit(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    String os = System.getProperty("os.name").toLowerCase();
-                    List<String> command = new ArrayList<String>();
-
-                    if (os.contains("win")) {
-                        command.add("cmd.exe");
-                    } else {
-                        String shell = System.getenv("SHELL");
-                        if (shell == null || shell.isEmpty()) {
-                            shell = "/bin/bash";
-                        }
-                        command.add(shell);
-                        command.add("-i");
-                    }
-
-                    ProcessBuilder pb = new ProcessBuilder(command);
-                    pb.directory(new File(workingDirectory));
-
-                    Map<String, String> env = pb.environment();
-                    env.put("TERM", "xterm-256color");
-                    env.put("PS1", ""); // 禁用 shell 自己的提示符
-
-                    pb.redirectErrorStream(false);
-
-                    shellProcess = pb.start();
-                    shellWriter = new PrintWriter(new OutputStreamWriter(
-                            shellProcess.getOutputStream(), StandardCharsets.UTF_8), true);
-
-                    isShellMode = true;
-
-                    Platform.runLater(new Runnable() {
-                        @Override
-                        public void run() {
-                            appendOutput("=== 交互式 Shell 已启动 ===\n", "info");
-                            appendOutput("输入命令后按 Enter 执行\n", "info");
-                            appendOutput("输入 'exit' 退出 Shell\n\n", "info");
-                        }
-                    });
-
-                    startOutputReader(shellProcess.getInputStream(), false);
-                    startOutputReader(shellProcess.getErrorStream(), true);
-
-                    int exitCode = shellProcess.waitFor();
-
-                    Platform.runLater(new Runnable() {
-                        @Override
-                        public void run() {
-                            if (isShellMode) {
-                                appendOutput(String.format("\nShell 已退出，退出码: %d\n", exitCode),
-                                        exitCode == 0 ? "success" : "error");
-                                stopShell();
-                                isExecuting.set(false);
-                                displayPrompt();
-                            }
-                        }
-                    });
-
-                } catch (IOException e) {
-                    final String errorMsg = e.getMessage();
-                    Platform.runLater(new Runnable() {
-                        @Override
-                        public void run() {
-                            appendOutput("启动 Shell 失败: " + errorMsg + "\n", "error");
-                            isExecuting.set(false);
-                            displayPrompt();
-                        }
-                    });
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    Platform.runLater(new Runnable() {
-                        @Override
-                        public void run() {
-                            appendOutput("Shell 被中断\n", "warning");
-                            stopShell();
-                            isExecuting.set(false);
-                            displayPrompt();
-                        }
-                    });
-                }
+    /**
+     * 启用输入框
+     */
+    private void enableInput() {
+        Platform.runLater(() -> {
+            if (commandInput != null) {
+                commandInput.setDisable(false);
+                commandInput.requestFocus();
             }
         });
     }
 
-    private void startOutputReader(final InputStream inputStream, final boolean isError) {
-        Thread thread = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    BufferedReader reader = new BufferedReader(
-                            new InputStreamReader(inputStream, StandardCharsets.UTF_8));
-
-                    char[] buffer = new char[1024];
-                    int charsRead;
-
-                    while ((charsRead = reader.read(buffer)) != -1 && isRunning.get() && isShellMode) {
-                        final String output = new String(buffer, 0, charsRead);
-                        Platform.runLater(new Runnable() {
-                            @Override
-                            public void run() {
-                                appendOutput(output, isError ? "error" : "");
-                            }
-                        });
-                    }
-
-                    reader.close();
-                } catch (IOException e) {
-                    if (isRunning.get() && isShellMode) {
-                        final String errorMsg = e.getMessage();
-                        Platform.runLater(new Runnable() {
-                            @Override
-                            public void run() {
-                                appendOutput("\n读取输出错误: " + errorMsg + "\n", "error");
-                            }
-                        });
-                    }
-                }
+    /**
+     * 禁用输入框
+     */
+    private void disableInput() {
+        Platform.runLater(() -> {
+            if (commandInput != null) {
+                commandInput.setDisable(true);
             }
         });
-        thread.setDaemon(true);
-        thread.start();
-
-        if (isError) {
-            errorReaderThread = thread;
-        } else {
-            outputReaderThread = thread;
-        }
     }
 
-    private void stopShell() {
-        isShellMode = false;
-
-        if (shellProcess != null && shellProcess.isAlive()) {
-            shellProcess.destroy();
-            try {
-                shellProcess.waitFor();
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-        }
-
-        if (shellWriter != null) {
-            shellWriter.close();
-            shellWriter = null;
-        }
-
-        shellProcess = null;
-        currentInput.setLength(0);
-
-        if (!isExecuting.get()) {
-            appendOutput("Shell 已停止\n", "warning");
-            displayPrompt();
-        }
-    }
-
+    
+    
+    
     private void executeExternalCommand(final String command) {
         if (isExecuting.get()) {
             appendOutput("正在执行命令，请稍候...\n", "warning");
@@ -632,6 +447,9 @@ public class EnhancedVirtualTerminal extends VBox {
         }
 
         isExecuting.set(true);
+
+        // 禁用输入框
+        disableInput();
 
         executor.submit(new Runnable() {
             @Override
@@ -650,6 +468,9 @@ public class EnhancedVirtualTerminal extends VBox {
                     pb.redirectErrorStream(true);
 
                     Process process = pb.start();
+
+                    // 保存当前进程引用（executeExternalCommand方法）
+                    currentProcess = process;
 
                     BufferedReader reader = new BufferedReader(
                             new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8));
@@ -676,6 +497,10 @@ public class EnhancedVirtualTerminal extends VBox {
                                 appendOutput(String.format("命令执行失败，退出码: %d\n", exitCode), "error");
                             }
                             isExecuting.set(false);
+                            // 清除当前进程引用
+                            currentProcess = null;
+                            // 重新启用输入框
+                            enableInput();
                             displayPrompt();
                         }
                     });
@@ -687,6 +512,10 @@ public class EnhancedVirtualTerminal extends VBox {
                         public void run() {
                             appendOutput("执行命令失败: " + errorMsg + "\n", "error");
                             isExecuting.set(false);
+                            // 清除当前进程引用
+                            currentProcess = null;
+                            // 重新启用输入框
+                            enableInput();
                             displayPrompt();
                         }
                     });
@@ -697,6 +526,10 @@ public class EnhancedVirtualTerminal extends VBox {
                         public void run() {
                             appendOutput("命令被中断\n", "warning");
                             isExecuting.set(false);
+                            // 清除当前进程引用
+                            currentProcess = null;
+                            // 重新启用输入框
+                            enableInput();
                             displayPrompt();
                         }
                     });
@@ -747,13 +580,12 @@ public class EnhancedVirtualTerminal extends VBox {
         appendOutput("  help     - 显示此帮助信息\n", "");
         appendOutput("  clear    - 清空终端屏幕\n", "");
         appendOutput("  cd <dir> - 切换工作目录\n", "");
-        appendOutput("  shell    - 启动交互式 Shell\n", "");
         appendOutput("  history  - 显示命令历史\n", "");
-        appendOutput("  exit     - 退出终端或 Shell\n\n", "");
+        appendOutput("  exit     - 退出终端\n\n", "");
         appendOutput("快捷键:\n", "");
         appendOutput("  ↑↓       - 浏览命令历史\n", "");
         appendOutput("  Tab      - 命令补全\n", "");
-        appendOutput("  Ctrl+C   - 复制内容\n", "");
+        appendOutput("  Ctrl+C   - 中断命令\n", "");
         appendOutput("  Ctrl+V   - 粘贴内容\n", "");
         appendOutput("  Ctrl+L   - 清空终端\n\n", "");
         displayPrompt();
@@ -785,10 +617,24 @@ public class EnhancedVirtualTerminal extends VBox {
         appendOutput("输入 'help' 查看帮助信息\n\n", "");
     }
 
+    private void updatePromptLabel() {
+        if (promptLabel != null) {
+            promptLabel.setText(prompt);
+        }
+    }
+
     private void displayPrompt() {
-        currentInput.setLength(0);
-        appendOutput(prompt, "prompt");
-        inputStartPosition = currentOutput.length();
+        // 更新输入框前的提示符标签
+        updatePromptLabel();
+
+        // 清空输入框并请求焦点
+        commandInput.clear();
+
+        // 如果没有正在执行命令，启用输入框并请求焦点
+        if (!isExecuting.get()) {
+            commandInput.setDisable(false);
+            commandInput.requestFocus();
+        }
     }
 
     private void appendOutput(String text, String colorType) {
@@ -798,7 +644,6 @@ public class EnhancedVirtualTerminal extends VBox {
         if (currentOutput.length() > 100000) {
             int deleteLength = currentOutput.length() - 80000;
             currentOutput.delete(0, deleteLength);
-            inputStartPosition = Math.max(0, inputStartPosition - deleteLength);
         }
 
         updateTerminalDisplay();
@@ -817,7 +662,7 @@ public class EnhancedVirtualTerminal extends VBox {
 
     public void clearTerminal() {
         currentOutput.setLength(0);
-        currentInput.setLength(0);
+        commandInput.clear();
         updateTerminalDisplay();
         displayPrompt();
     }
@@ -841,7 +686,7 @@ public class EnhancedVirtualTerminal extends VBox {
     }
 
     private void pasteToTerminal() {
-        if (isExecuting.get() && !isShellMode) {
+        if (isExecuting.get()) {
             return; // 正在执行命令时不允许粘贴
         }
 
@@ -849,14 +694,10 @@ public class EnhancedVirtualTerminal extends VBox {
         String clipboardText = clipboard.getString();
 
         if (clipboardText != null && !clipboardText.trim().isEmpty()) {
-            if (isShellMode) {
-                sendToShell(clipboardText);
-            } else {
-                // 只粘贴第一行，避免一次执行多个命令
-                String firstLine = clipboardText.split("\n")[0];
-                currentInput.append(firstLine);
-                updateInputDisplay();
-            }
+            // 只粘贴第一行，避免一次执行多个命令
+            String firstLine = clipboardText.split("\n")[0];
+            commandInput.setText(commandInput.getText() + firstLine);
+            commandInput.positionCaret(commandInput.getText().length());
         }
     }
 
@@ -883,6 +724,9 @@ public class EnhancedVirtualTerminal extends VBox {
         }
 
         isExecuting.set(true);
+
+        // 禁用输入框
+        disableInput();
 
         executor.submit(new Runnable() {
             @Override
@@ -911,6 +755,9 @@ public class EnhancedVirtualTerminal extends VBox {
 
                     Process process = pb.start();
 
+                    // 保存当前进程引用（executeToolCommand方法）
+                    currentProcess = process;
+
                     BufferedReader reader = new BufferedReader(
                             new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8));
 
@@ -934,6 +781,10 @@ public class EnhancedVirtualTerminal extends VBox {
                             appendOutput(String.format("工具执行完成，退出码: %d\n", exitCode),
                                     exitCode == 0 ? "success" : "error");
                             isExecuting.set(false);
+                            // 清除当前进程引用
+                            currentProcess = null;
+                            // 重新启用输入框
+                            enableInput();
                             displayPrompt();
                         }
                     });
@@ -945,6 +796,10 @@ public class EnhancedVirtualTerminal extends VBox {
                         public void run() {
                             appendOutput("执行工具失败: " + errorMsg + "\n", "error");
                             isExecuting.set(false);
+                            // 清除当前进程引用
+                            currentProcess = null;
+                            // 重新启用输入框
+                            enableInput();
                             displayPrompt();
                         }
                     });
@@ -955,6 +810,10 @@ public class EnhancedVirtualTerminal extends VBox {
                         public void run() {
                             appendOutput("工具执行被中断\n", "warning");
                             isExecuting.set(false);
+                            // 清除当前进程引用
+                            currentProcess = null;
+                            // 重新启用输入框
+                            enableInput();
                             displayPrompt();
                         }
                     });
@@ -968,7 +827,7 @@ public class EnhancedVirtualTerminal extends VBox {
             this.workingDirectory = directory;
             this.prompt = buildPrompt();
             appendOutput("工作目录设置为: " + workingDirectory + "\n", "");
-            if (!isShellMode && !isExecuting.get()) {
+            if (!isExecuting.get()) {
                 displayPrompt();
             }
         }
@@ -977,7 +836,11 @@ public class EnhancedVirtualTerminal extends VBox {
     public void closeTerminal() {
         isRunning.set(false);
 
-        stopShell();
+        // 中断当前执行的进程
+        if (currentProcess != null && currentProcess.isAlive()) {
+            currentProcess.destroyForcibly();
+            currentProcess = null;
+        }
 
         if (executor != null && !executor.isShutdown()) {
             executor.shutdownNow();
@@ -1051,6 +914,39 @@ public class EnhancedVirtualTerminal extends VBox {
             buttonBox.setStyle("-fx-background-color: #2d3748;");
         } else {
             buttonBox.setStyle("-fx-background-color: #f8f9fa;");
+        }
+    }
+
+    /**
+     * 更新输入框容器样式
+     */
+    private void updateInputBoxStyle(HBox inputBox) {
+        if (GlobalVariable.isDarkMode()) {
+            inputBox.setStyle("-fx-background-color: #2d3748; -fx-border-color: #4a5568; -fx-border-width: 1px; -fx-border-radius: 4; -fx-background-radius: 4;");
+        } else {
+            inputBox.setStyle("-fx-background-color: #f8f9fa; -fx-border-color: #ddd; -fx-border-width: 1px; -fx-border-radius: 4; -fx-background-radius: 4;");
+        }
+    }
+
+    /**
+     * 更新提示符标签样式
+     */
+    private void updatePromptLabelStyle(Label promptLabel) {
+        if (GlobalVariable.isDarkMode()) {
+            promptLabel.setTextFill(Color.web("#e2e8f0"));
+        } else {
+            promptLabel.setTextFill(Color.web("#333"));
+        }
+    }
+
+    /**
+     * 更新输入框样式
+     */
+    private void updateInputFieldStyle(TextField inputField) {
+        if (GlobalVariable.isDarkMode()) {
+            inputField.setStyle("-fx-background-color: #4a5568; -fx-text-fill: #e2e8f0; -fx-border-color: #718096; -fx-border-width: 1px; -fx-border-radius: 4; -fx-background-radius: 4; -fx-prompt-text-fill: #a0aec0;");
+        } else {
+            inputField.setStyle("-fx-background-color: white; -fx-text-fill: #333; -fx-border-color: #ddd; -fx-border-width: 1px; -fx-border-radius: 4; -fx-background-radius: 4; -fx-prompt-text-fill: #999;");
         }
     }
 }

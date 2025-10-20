@@ -100,7 +100,7 @@ public class UI extends Application {
         primaryStage.setHeight(800);
         primaryStage.getIcons().add(icon);
         primaryStage.show();
-        ScenicView.show(currentScene);
+//        ScenicView.show(currentScene);
 
 
         // ============================================================Step 6: 处理一些绑定事件==========================================================

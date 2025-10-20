@@ -202,6 +202,18 @@
     -fx-text-fill: #a0aec0 !important;
 }
 
+/* TextField 禁用状态 - 黑暗模式 */
+.root.dark .text-field:disabled {
+    -fx-background-color: #2d3748 !important;
+    -fx-border-color: #4a5568 !important;
+    -fx-text-fill: #a0aec0 !important;
+    -fx-opacity: 0.8;
+}
+
+.root.dark .text-field:disabled:focused {
+    -fx-border-color: #4a5568 !important;
+}
+
 /* 按钮样式 - 黑暗模式 */
 .root.dark .button {
     -fx-background-color: #4a5568;

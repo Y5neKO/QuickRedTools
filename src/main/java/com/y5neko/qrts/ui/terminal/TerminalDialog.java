@@ -128,6 +128,8 @@ public class TerminalDialog {
             }
         });
 
+        // CLI工具窗口一打开就是运行状态，不需要复杂的状态监控
+
         // 设置工作目录
         if (tool.getWorkingDirectory() != null && !tool.getWorkingDirectory().trim().isEmpty()) {
             terminal.setWorkingDirectory(tool.getWorkingDirectory());

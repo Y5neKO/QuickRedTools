@@ -8,8 +8,10 @@ import com.y5neko.qrts.service.DataManager;
 import com.y5neko.qrts.service.ToolLauncher;
 import com.y5neko.qrts.ui.dialog.EnvironmentDialog;
 import com.y5neko.qrts.ui.dialog.ToolDialog;
+import com.y5neko.qrts.ui.terminal.EnhancedVirtualTerminal;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
+import java.util.UUID;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
@@ -107,8 +109,37 @@ public class Center {
     /**
      * 设置主界面centerBox引用
      */
+    public static Center getInstance() {
+        return instance;
+    }
+
     public static void setMainCenterBox(VBox centerBox) {
         mainCenterBox = centerBox;
+    }
+
+    /**
+     * 通知CLI工具窗口已关闭
+     */
+    public void notifyCLIToolClosed(String toolId) {
+        Platform.runLater(() -> {
+            for (RunningToolInfo tool : runningTools) {
+                if (tool.getId().equals(toolId) && tool.process == null) {
+                    tool.setRunning(false);
+                    tool.setStatus("已停止");
+                    updateSimpleStatus();
+
+                    // 使用JavaFX Timeline而不是创建新线程
+                    final RunningToolInfo toolToRemove = tool; // 创建final副本
+                    Timeline delayTimer = new Timeline(new KeyFrame(Duration.seconds(5), e -> {
+                        runningTools.remove(toolToRemove);
+                        updateSimpleStatus();
+                    }));
+                    delayTimer.setCycleCount(1);
+                    delayTimer.play();
+                    break;
+                }
+            }
+        });
     }
 
     /**
@@ -366,7 +397,7 @@ public class Center {
         }
     }
 
-    private void updateSimpleStatus() {
+    public void updateSimpleStatus() {
         // 获取工具信息标签
         Label toolsLabel = statusContent;
 
@@ -778,45 +809,36 @@ public class Center {
                 return;
             }
 
-            // 为CLI工具创建关闭回调
+            // 先创建RunningToolInfo获取ID
+            RunningToolInfo toolInfo = new RunningToolInfo(tool.getName(), null, !tool.isHasGUI());
+            runningTools.add(toolInfo);
+
+            // 为CLI工具创建关闭回调，使用ID
             Runnable closeCallback = null;
             if (!tool.isHasGUI()) {
+                final String toolId = toolInfo.getId(); // 使用final变量用于lambda
                 closeCallback = () -> {
-                    Platform.runLater(() -> {
-                        // 查找对应的工具信息并更新状态
-                        for (RunningToolInfo runningTool : runningTools) {
-                            if (runningTool.getName().equals(tool.getName()) && runningTool.isRunning()) {
-                                runningTool.setRunning(false);
-                                runningTool.setStatus("已停止");
-                                updateSimpleStatus();
-
-                                // 5秒后自动移除
-                                setTimeout(() -> {
-                                    runningTools.remove(runningTool);
-                                    updateSimpleStatus();
-                                }, 5000);
-                                break;
-                            }
-                        }
-                    });
+                    notifyCLIToolClosed(toolId);
                 };
             }
 
             // 静默启动工具，不显示成功提示
             Process process = toolLauncher.launchTool(tool, closeCallback);
 
-            // 对于所有工具，都需要注册到状态栏（包括CLI工具）
-            RunningToolInfo toolInfo = new RunningToolInfo(tool.getName(), process, !tool.isHasGUI());
-            runningTools.add(toolInfo);
-            updateSimpleStatus();
-
-            // 对于GUI工具，启动监控线程来更新状态栏
+            // 更新RunningToolInfo的进程（如果是GUI工具）
             if (process != null) {
+                toolInfo.setProcess(process);
+            }
+
+            // 对于GUI工具，立即更新状态并启动监控线程
+            if (process != null) {
+                updateSimpleStatus();
                 monitorProcessWithStatus(process, toolInfo);
             }
-            // 对于CLI工具，不再需要虚拟监控线程，因为有了准确的关闭回调
+            // 对于CLI工具，不立即更新状态，等待终端通知
             else {
-                // CLI工具现在通过回调准确检测关闭，不需要猜测
+                // CLI工具状态由终端通过回调通知，这里只显示启动状态
+                updateSimpleStatus();
             }
 
         } catch (Exception e) {
@@ -948,12 +970,14 @@ public class Center {
                         updateSimpleStatus();
 
                         // 5秒后自动移除
-                        setTimeout(() -> {
+                        Timeline delayTimer = new Timeline(new KeyFrame(Duration.seconds(5), e -> {
                             if (runningTools.contains(toolInfo)) {
                                 runningTools.remove(toolInfo);
                                 updateSimpleStatus();
                             }
-                        }, 5000);
+                        }));
+                        delayTimer.setCycleCount(1);
+                        delayTimer.play();
                     }
                 });
             } catch (InterruptedException e) {
@@ -967,17 +991,7 @@ public class Center {
         }).start();
     }
 
-    private void setTimeout(Runnable runnable, long delay) {
-        new Thread(() -> {
-            try {
-                Thread.sleep(delay);
-                Platform.runLater(runnable);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-        }).start();
-    }
-
+    
     private void showAlert(String title, String message) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
         alert.setTitle(title);
@@ -990,6 +1004,7 @@ public class Center {
      * 运行工具信息类
      */
     private static class RunningToolInfo {
+        private final String id; // 唯一标识符
         private String name;
         private Process process;
         private long startTime;
@@ -997,6 +1012,7 @@ public class Center {
         private String status;
 
         public RunningToolInfo(String name, Process process) {
+            this.id = generateUniqueId();
             this.name = name;
             this.process = process;
             this.startTime = System.currentTimeMillis();
@@ -1005,11 +1021,22 @@ public class Center {
         }
 
         public RunningToolInfo(String name, Process process, boolean isCLI) {
+            this.id = generateUniqueId();
             this.name = name;
             this.process = process;
             this.startTime = System.currentTimeMillis();
             this.running = true;
             this.status = isCLI ? "命令行工具" : "运行中";
+        }
+
+        // 生成唯一ID
+        private String generateUniqueId() {
+            return UUID.randomUUID().toString().substring(0, 8);
+        }
+
+        
+        public String getId() {
+            return id;
         }
 
         public String getName() {
@@ -1020,17 +1047,24 @@ public class Center {
             return process;
         }
 
+        public void setProcess(Process process) {
+            this.process = process;
+        }
+
         public long getStartTime() {
             return startTime;
         }
 
         public boolean isRunning() {
             if (running && process != null) {
+                // GUI工具：检查进程状态
                 running = process.isAlive();
                 if (!running) {
                     status = "已停止";
                 }
             }
+            // CLI工具：保持运行状态，直到窗口关闭回调
+
             return running;
         }
 
