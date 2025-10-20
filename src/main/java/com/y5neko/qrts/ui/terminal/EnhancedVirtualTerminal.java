@@ -1,5 +1,6 @@
 package com.y5neko.qrts.ui.terminal;
 
+import com.y5neko.qrts.config.GlobalVariable;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -7,6 +8,7 @@ import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.*;
+import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 
 import java.io.*;
@@ -75,29 +77,28 @@ public class EnhancedVirtualTerminal extends VBox {
     }
 
     private void initializeUI() {
-        setStyle("-fx-background-color: #1e1e1e; -fx-border-color: #333; -fx-border-width: 1;");
         setPadding(new Insets(10));
         setSpacing(5);
+
+        // 应用黑暗模式
+        applyDarkMode();
 
         // 终端显示区域（整合输入输出）
         terminalArea = new TextArea();
         terminalArea.setEditable(false); // 通过事件控制编辑
         terminalArea.setWrapText(true);
-        terminalArea.setStyle(
-                "-fx-control-inner-background: #1e1e1e; " +
-                        "-fx-text-fill: #e6e6e6; " +
-                        "-fx-font-family: 'Consolas', 'Courier New', monospace; " +
-                        "-fx-font-size: 14px; " +
-                        "-fx-highlight-fill: #3a3a3a; " +
-                        "-fx-highlight-text-fill: #ffffff;"
-        );
+
+        // 应用终端区域样式
+        updateTerminalAreaStyle();
+
         terminalArea.setFont(Font.font("Consolas", 14));
 
         // 按钮区域
         HBox buttonBox = new HBox(10);
         buttonBox.setAlignment(Pos.CENTER_RIGHT);
 
-        Button clearBtn = createStyledButton("清空", "#444");
+        Button clearBtn = createStyledButton("清空");
+        updateButtonStyle(clearBtn);
         clearBtn.setOnAction(new javafx.event.EventHandler<javafx.event.ActionEvent>() {
             @Override
             public void handle(javafx.event.ActionEvent e) {
@@ -105,7 +106,8 @@ public class EnhancedVirtualTerminal extends VBox {
             }
         });
 
-        Button copyBtn = createStyledButton("复制", "#444");
+        Button copyBtn = createStyledButton("复制");
+        updateButtonStyle(copyBtn);
         copyBtn.setOnAction(new javafx.event.EventHandler<javafx.event.ActionEvent>() {
             @Override
             public void handle(javafx.event.ActionEvent e) {
@@ -113,7 +115,8 @@ public class EnhancedVirtualTerminal extends VBox {
             }
         });
 
-        Button pasteBtn = createStyledButton("粘贴", "#444");
+        Button pasteBtn = createStyledButton("粘贴");
+        updateButtonStyle(pasteBtn);
         pasteBtn.setOnAction(new javafx.event.EventHandler<javafx.event.ActionEvent>() {
             @Override
             public void handle(javafx.event.ActionEvent e) {
@@ -121,7 +124,8 @@ public class EnhancedVirtualTerminal extends VBox {
             }
         });
 
-        Button shellBtn = createStyledButton("启动 Shell", "#4a90e2");
+        Button shellBtn = createStyledButton("启动 Shell");
+        updateButtonStyle(shellBtn);
         shellBtn.setOnAction(new javafx.event.EventHandler<javafx.event.ActionEvent>() {
             @Override
             public void handle(javafx.event.ActionEvent e) {
@@ -129,7 +133,8 @@ public class EnhancedVirtualTerminal extends VBox {
             }
         });
 
-        Button stopBtn = createStyledButton("停止", "#d9534f");
+        Button stopBtn = createStyledButton("停止");
+        updateButtonStyle(stopBtn);
         stopBtn.setOnAction(new javafx.event.EventHandler<javafx.event.ActionEvent>() {
             @Override
             public void handle(javafx.event.ActionEvent e) {
@@ -138,6 +143,9 @@ public class EnhancedVirtualTerminal extends VBox {
         });
 
         buttonBox.getChildren().addAll(clearBtn, copyBtn, pasteBtn, shellBtn, stopBtn);
+
+        // 应用按钮容器样式
+        updateButtonBoxStyle(buttonBox);
 
         getChildren().addAll(terminalArea, buttonBox);
         VBox.setVgrow(terminalArea, Priority.ALWAYS);
@@ -154,36 +162,8 @@ public class EnhancedVirtualTerminal extends VBox {
         });
     }
 
-    private Button createStyledButton(String text, final String color) {
+    private Button createStyledButton(String text) {
         final Button button = new Button(text);
-        button.setStyle(String.format(
-                "-fx-background-color: %s; -fx-text-fill: white; -fx-border-radius: 3; " +
-                        "-fx-background-radius: 3; -fx-cursor: hand; -fx-padding: 5 10px;",
-                color
-        ));
-
-        button.setOnMouseEntered(new javafx.event.EventHandler<javafx.scene.input.MouseEvent>() {
-            @Override
-            public void handle(javafx.scene.input.MouseEvent event) {
-                button.setStyle(String.format(
-                        "-fx-background-color: derive(%s, -15%%); -fx-text-fill: white; " +
-                                "-fx-border-radius: 3; -fx-background-radius: 3; -fx-cursor: hand; -fx-padding: 5 10px;",
-                        color
-                ));
-            }
-        });
-
-        button.setOnMouseExited(new javafx.event.EventHandler<javafx.scene.input.MouseEvent>() {
-            @Override
-            public void handle(javafx.scene.input.MouseEvent event) {
-                button.setStyle(String.format(
-                        "-fx-background-color: %s; -fx-text-fill: white; -fx-border-radius: 3; " +
-                                "-fx-background-radius: 3; -fx-cursor: hand; -fx-padding: 5 10px;",
-                        color
-                ));
-            }
-        });
-
         return button;
     }
 
@@ -1014,5 +994,63 @@ public class EnhancedVirtualTerminal extends VBox {
 
     public boolean isExecuting() {
         return isExecuting.get();
+    }
+
+    /**
+     * 应用黑暗模式
+     */
+    private void applyDarkMode() {
+        if (GlobalVariable.isDarkMode()) {
+            setStyle("-fx-background-color: #1a202c; -fx-border-color: #4a5568; -fx-border-width: 1;");
+        } else {
+            setStyle("-fx-background-color: #f8f9fa; -fx-border-color: #ddd; -fx-border-width: 1;");
+        }
+    }
+
+    /**
+     * 更新终端区域样式
+     */
+    private void updateTerminalAreaStyle() {
+        if (GlobalVariable.isDarkMode()) {
+            terminalArea.setStyle(
+                    "-fx-control-inner-background: #1a202c; " +
+                            "-fx-text-fill: #e2e8f0; " +
+                            "-fx-font-family: 'Consolas', 'Courier New', monospace; " +
+                            "-fx-font-size: 14px; " +
+                            "-fx-highlight-fill: #4a5568; " +
+                            "-fx-highlight-text-fill: #ffffff;"
+            );
+        } else {
+            terminalArea.setStyle(
+                    "-fx-control-inner-background: white; " +
+                            "-fx-text-fill: #333; " +
+                            "-fx-font-family: 'Consolas', 'Courier New', monospace; " +
+                            "-fx-font-size: 14px; " +
+                            "-fx-highlight-fill: #3a3a3a; " +
+                            "-fx-highlight-text-fill: #ffffff;"
+            );
+        }
+    }
+
+    /**
+     * 更新按钮样式
+     */
+    private void updateButtonStyle(Button button) {
+        if (GlobalVariable.isDarkMode()) {
+            button.setStyle("-fx-background-color: #4a5568; -fx-text-fill: #e2e8f0; -fx-border-color: #718096; -fx-border-radius: 4; -fx-background-radius: 4;");
+        } else {
+            button.setStyle("-fx-background-color: #f8f9fa; -fx-text-fill: #333; -fx-border-color: #ddd; -fx-border-radius: 4; -fx-background-radius: 4;");
+        }
+    }
+
+    /**
+     * 更新按钮容器样式
+     */
+    private void updateButtonBoxStyle(HBox buttonBox) {
+        if (GlobalVariable.isDarkMode()) {
+            buttonBox.setStyle("-fx-background-color: #2d3748;");
+        } else {
+            buttonBox.setStyle("-fx-background-color: #f8f9fa;");
+        }
     }
 }

@@ -123,7 +123,7 @@ public class Center {
     }
 
     /**
-     * 静态方法，用于字体设置后的全局刷新
+     * 静态方法，用于字体设置和黑暗模式后的全局刷新
      */
     public static void refreshAll() {
         if (instance != null && mainCenterBox != null) {
@@ -134,7 +134,17 @@ public class Center {
                 // 重新创建组件
                 mainCenterBox.getStylesheets().add("css/TextField.css");
                 mainCenterBox.setPadding(new Insets(10, 10, 10, 10));
-                mainCenterBox.setBackground(new Background(new BackgroundFill(Color.WHITE, null, null)));
+
+                // 根据黑暗模式状态设置背景色
+                if (GlobalVariable.isDarkMode()) {
+                    mainCenterBox.setBackground(new Background(new BackgroundFill(Color.web("#1a202c"), null, null)));
+                    mainCenterBox.setStyle("-fx-background-color: #1a202c;");
+                    System.out.println("Center VBox设置为黑暗模式背景");
+                } else {
+                    mainCenterBox.setBackground(new Background(new BackgroundFill(Color.WHITE, null, null)));
+                    mainCenterBox.setStyle("-fx-background-color: white;");
+                    System.out.println("Center VBox设置为白色模式背景");
+                }
 
                 // 重新创建工具栏
                 HBox toolBar = instance.createToolBar();
@@ -164,7 +174,7 @@ public class Center {
         centerBox = new VBox();
         centerBox.getStylesheets().add("css/TextField.css");
         centerBox.setPadding(new Insets(10, 10, 10, 10));
-        centerBox.setBackground(new Background(new BackgroundFill(Color.WHITE, null, null)));
+        updateBackgroundColor();
 
         // 创建工具栏
         HBox toolBar = createToolBar();
@@ -188,7 +198,7 @@ public class Center {
     private HBox createToolBar() {
         HBox toolBar = new HBox(10);
         toolBar.setPadding(new Insets(5));
-        toolBar.setStyle("-fx-background-color: #f0f0f0; -fx-border-color: #ddd; -fx-border-width: 0 0 1 0;");
+        updateToolBarStyle(toolBar);
         toolBar.setAlignment(Pos.CENTER_LEFT);
 
         Label title = new Label("快速启动工具");
@@ -198,26 +208,26 @@ public class Center {
         searchField = new TextField();
         searchField.setPromptText("搜索工具...");
         searchField.setPrefWidth(180);
-        searchField.setStyle("-fx-background-color: white; -fx-border-color: #ddd; -fx-border-radius: 4; -fx-padding: 8 12; -fx-font-size: 13px; -fx-border-width: 1; -fx-focus-color: transparent; -fx-faint-focus-color: transparent; -fx-focus-traversable: false;");
+        updateSearchFieldStyle(searchField);
         searchField.textProperty().addListener((obs, oldVal, newVal) -> {
             filterAndDisplayTools(newVal);
         });
 
         // 搜索清除按钮
         Button clearSearchBtn = new Button("✕");
-        clearSearchBtn.setStyle("-fx-background-color: transparent; -fx-border: none; -fx-text-fill: #999; -fx-cursor: hand; -fx-font-size: 14px; -fx-padding: 4;");
+        updateButtonTextColor(clearSearchBtn);
         clearSearchBtn.setOnAction(e -> {
             searchField.clear();
         });
 
         // 搜索图标 - 使用文本而不是emoji
         Label searchIcon = new Label("⚲");
-        searchIcon.setStyle("-fx-text-fill: #666; -fx-font-size: 14px;");
+        updateSearchIconColor(searchIcon);
 
         // 搜索框容器
         HBox searchBox = new HBox(2);
         searchBox.getChildren().addAll(searchIcon, searchField, clearSearchBtn);
-        searchBox.setStyle("-fx-background-color: white; -fx-border-color: #ddd; -fx-border-radius: 4; -fx-padding: 6 10; -fx-border-width: 1; -fx-focus-color: transparent; -fx-faint-focus-color: transparent;");
+        updateSearchBoxStyle(searchBox);
         searchBox.setAlignment(Pos.CENTER_LEFT);
 
         // 搜索框焦点效果 - 移除蓝色焦点边框
@@ -227,58 +237,50 @@ public class Center {
 
         // 清除按钮悬停效果
         clearSearchBtn.setOnMouseEntered(e -> {
-            clearSearchBtn.setStyle("-fx-background-color: transparent; -fx-border: none; -fx-text-fill: #666; -fx-cursor: hand; -fx-font-size: 14px; -fx-padding: 4;");
+            if (GlobalVariable.isDarkMode()) {
+                clearSearchBtn.setStyle("-fx-background-color: transparent; -fx-border: none; -fx-text-fill: #e2e8f0; -fx-cursor: hand; -fx-font-size: 14px; -fx-padding: 4;");
+            } else {
+                clearSearchBtn.setStyle("-fx-background-color: transparent; -fx-border: none; -fx-text-fill: #666; -fx-cursor: hand; -fx-font-size: 14px; -fx-padding: 4;");
+            }
         });
         clearSearchBtn.setOnMouseExited(e -> {
-            clearSearchBtn.setStyle("-fx-background-color: transparent; -fx-border: none; -fx-text-fill: #999; -fx-cursor: hand; -fx-font-size: 14px; -fx-padding: 4;");
+            updateButtonTextColor(clearSearchBtn);
         });
 
         Button refreshBtn = new Button("刷新");
         refreshBtn.setOnAction(e -> refreshToolDisplay());
         refreshBtn.setFont(getButtonFont());
-        refreshBtn.setStyle("-fx-background-color: #f8f9fa; -fx-border-color: #ddd; -fx-border-radius: 4; -fx-background-radius: 4; -fx-border-width: 1; -fx-focus-color: transparent; -fx-faint-focus-color: transparent; -fx-padding: 8 16px; -fx-cursor: hand;");
+        updateToolBarButtonStyle(refreshBtn);
 
         Button manageEnvBtn = new Button("环境配置");
         manageEnvBtn.setOnAction(e -> new EnvironmentDialog(this::refreshToolDisplay).show());
         manageEnvBtn.setFont(getButtonFont());
-        manageEnvBtn.setStyle("-fx-background-color: #f8f9fa; -fx-border-color: #ddd; -fx-border-radius: 4; -fx-background-radius: 4; -fx-border-width: 1; -fx-focus-color: transparent; -fx-faint-focus-color: transparent; -fx-padding: 8 16px; -fx-cursor: hand;");
+        updateToolBarButtonStyle(manageEnvBtn);
 
         Button manageToolsBtn = new Button("工具管理");
         manageToolsBtn.setOnAction(e -> new ToolDialog(this::refreshToolDisplay).show());
         manageToolsBtn.setFont(getButtonFont());
-        manageToolsBtn.setStyle("-fx-background-color: #f8f9fa; -fx-border-color: #ddd; -fx-border-radius: 4; -fx-background-radius: 4; -fx-border-width: 1; -fx-focus-color: transparent; -fx-faint-focus-color: transparent; -fx-padding: 8 16px; -fx-cursor: hand;");
+        updateToolBarButtonStyle(manageToolsBtn);
 
         // 添加折叠/展开按钮
         Button expandAllBtn = new Button("全部展开");
         expandAllBtn.setOnAction(e -> expandAllCategories());
         expandAllBtn.setFont(getButtonFont());
-        expandAllBtn.setStyle("-fx-background-color: #f8f9fa; -fx-border-color: #ddd; -fx-border-radius: 4; -fx-background-radius: 4; -fx-border-width: 1; -fx-focus-color: transparent; -fx-faint-focus-color: transparent; -fx-padding: 8 16px; -fx-cursor: hand;");
+        updateToolBarButtonStyle(expandAllBtn);
 
         Button collapseAllBtn = new Button("全部折叠");
         collapseAllBtn.setOnAction(e -> collapseAllCategories());
         collapseAllBtn.setFont(getButtonFont());
-        collapseAllBtn.setStyle("-fx-background-color: #f8f9fa; -fx-border-color: #ddd; -fx-border-radius: 4; -fx-background-radius: 4; -fx-border-width: 1; -fx-focus-color: transparent; -fx-faint-focus-color: transparent; -fx-padding: 8 16px; -fx-cursor: hand;");
+        updateToolBarButtonStyle(collapseAllBtn);
 
-        // 添加按钮悬停效果
-        String buttonHoverStyle = "-fx-background-color: #e9ecef; -fx-border-color: #adb5bd; -fx-border-radius: 4; -fx-background-radius: 4; -fx-border-width: 1; -fx-focus-color: transparent; -fx-faint-focus-color: transparent; -fx-padding: 8 16px; -fx-cursor: hand;";
-        String buttonNormalStyle = "-fx-background-color: #f8f9fa; -fx-border-color: #ddd; -fx-border-radius: 4; -fx-background-radius: 4; -fx-border-width: 1; -fx-focus-color: transparent; -fx-faint-focus-color: transparent; -fx-padding: 8 16px; -fx-cursor: hand;";
+        // 按钮悬停效果已在updateToolBarButtonStyle方法中处理
 
-        refreshBtn.setOnMouseEntered(e -> refreshBtn.setStyle(buttonHoverStyle));
-        refreshBtn.setOnMouseExited(e -> refreshBtn.setStyle(buttonNormalStyle));
+        // 使用细线Label替代Separator
+        Label separator1 = createSeparatorLabel();
+        Label separator2 = createSeparatorLabel();
+        Label separator3 = createSeparatorLabel();
 
-        manageEnvBtn.setOnMouseEntered(e -> manageEnvBtn.setStyle(buttonHoverStyle));
-        manageEnvBtn.setOnMouseExited(e -> manageEnvBtn.setStyle(buttonNormalStyle));
-
-        manageToolsBtn.setOnMouseEntered(e -> manageToolsBtn.setStyle(buttonHoverStyle));
-        manageToolsBtn.setOnMouseExited(e -> manageToolsBtn.setStyle(buttonNormalStyle));
-
-        expandAllBtn.setOnMouseEntered(e -> expandAllBtn.setStyle(buttonHoverStyle));
-        expandAllBtn.setOnMouseExited(e -> expandAllBtn.setStyle(buttonNormalStyle));
-
-        collapseAllBtn.setOnMouseEntered(e -> collapseAllBtn.setStyle(buttonHoverStyle));
-        collapseAllBtn.setOnMouseExited(e -> collapseAllBtn.setStyle(buttonNormalStyle));
-
-        toolBar.getChildren().addAll(title, new Separator(Orientation.VERTICAL), searchBox, new Separator(Orientation.VERTICAL), refreshBtn, manageEnvBtn, manageToolsBtn, new Separator(Orientation.VERTICAL), expandAllBtn, collapseAllBtn);
+        toolBar.getChildren().addAll(title, separator1, searchBox, separator2, refreshBtn, manageEnvBtn, manageToolsBtn, separator3, expandAllBtn, collapseAllBtn);
 
         return toolBar;
     }
@@ -286,18 +288,18 @@ public class Center {
     private HBox createSimpleStatusBar() {
         // 主状态栏
         statusBar = new HBox(10);
-        statusBar.setStyle("-fx-background-color: #ffffff; -fx-border-color: #ddd; -fx-border-width: 1 0 0 0; -fx-padding: 10 15;");
+        updateStatusBarStyle(statusBar);
         statusBar.setAlignment(Pos.CENTER_LEFT);
 
         // 状态标签
         Label statusLabel = new Label("运行状态: ");
         statusLabel.setFont(getStatusFont());
-        statusLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: #333;");
+        updatePrimaryTextColor(statusLabel);
 
         // 工具信息显示区域
         statusContent = new Label();
         statusContent.setFont(getStatusFont());
-        statusContent.setStyle("-fx-text-fill: #666;");
+        updateSecondaryTextColor(statusContent);
         HBox.setHgrow(statusContent, Priority.ALWAYS);
 
         // 控制按钮区域
@@ -306,7 +308,7 @@ public class Center {
 
         Button toggleBtn = new Button(statusBarVisible ? "隐藏" : "显示");
         toggleBtn.setFont(getButtonFont());
-        toggleBtn.setStyle("-fx-background-color: #6c757d; -fx-text-fill: white; -fx-border-radius: 3; -fx-background-radius: 3; -fx-cursor: hand; -fx-padding: 4 10px;");
+        updateStatusBarButtonStyle(toggleBtn, "toggle");
         toggleBtn.setOnAction(e -> {
             toggleStatusBar();
             toggleBtn.setText(statusBarVisible ? "隐藏" : "显示");
@@ -314,7 +316,7 @@ public class Center {
 
         Button clearBtn = new Button("清理");
         clearBtn.setFont(getButtonFont());
-        clearBtn.setStyle("-fx-background-color: #dc3545; -fx-text-fill: white; -fx-border-radius: 3; -fx-background-radius: 3; -fx-cursor: hand; -fx-padding: 4 10px;");
+        updateStatusBarButtonStyle(clearBtn, "clear");
         clearBtn.setOnAction(e -> clearCompletedTools());
 
         controlBox.getChildren().addAll(toggleBtn, clearBtn);
@@ -458,14 +460,17 @@ public class Center {
         mainScrollPane.setFitToHeight(true);
         mainScrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         mainScrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+        updateScrollPanesStyle();
 
         // 创建占位内容，避免启动时加载慢
         VBox mainContent = new VBox(20);
         mainContent.setPadding(new Insets(15));
+        updateScrollContentStyle(mainContent);
 
         // 添加加载提示
         Label loadingLabel = new Label("正在加载工具数据...");
-        loadingLabel.setStyle("-fx-font-size: 16px; -fx-text-fill: #666;");
+        loadingLabel.setStyle("-fx-font-size: 16px;");
+        updateSecondaryTextColor(loadingLabel);
         loadingLabel.setAlignment(Pos.CENTER);
 
         VBox.setVgrow(loadingLabel, Priority.ALWAYS);
@@ -486,6 +491,9 @@ public class Center {
         allCategories = dataManager.loadCategories();
         allTools = dataManager.loadTools();
 
+        // 确保主滚动面板的背景色正确
+        updateScrollPanesStyle();
+
         // 根据当前搜索内容过滤和显示
         String searchText = searchField != null ? searchField.getText().trim() : "";
         filterAndDisplayTools(searchText);
@@ -496,6 +504,9 @@ public class Center {
             return;
         }
         VBox mainContent = (VBox) mainScrollPane.getContent();
+
+        // 确保mainContent的背景色正确
+        updateScrollContentStyle(mainContent);
 
         // 清除所有现有内容，避免重复显示
         mainContent.getChildren().clear();
@@ -512,7 +523,7 @@ public class Center {
         if (allCategories.isEmpty()) {
             Label noCategoryLabel = new Label("暂无工具分类，请先添加工具分类");
             noCategoryLabel.setFont(getLabelFont());
-            noCategoryLabel.setStyle("-fx-text-fill: #666; -fx-focus-color: transparent; -fx-faint-focus-color: transparent;");
+            updateLabelStyle(noCategoryLabel, "secondary");
             mainContent.getChildren().add(noCategoryLabel);
             return;
         }
@@ -521,7 +532,7 @@ public class Center {
         if (!searchText.isEmpty()) {
             Label searchResultLabel = new Label("搜索结果: '" + searchText + "' (找到 " + filteredTools.size() + " 个工具)");
             searchResultLabel.setFont(getLabelFont());
-            searchResultLabel.setStyle("-fx-text-fill: #4a90e2; -fx-font-weight: bold; -fx-focus-color: transparent; -fx-faint-focus-color: transparent;");
+            updateLabelStyle(searchResultLabel, "search");
             mainContent.getChildren().add(searchResultLabel);
         }
 
@@ -542,7 +553,7 @@ public class Center {
         if (!searchText.isEmpty() && !hasVisibleTools) {
             Label noResultLabel = new Label("未找到匹配的工具，请尝试其他关键词");
             noResultLabel.setFont(getLabelFont());
-            noResultLabel.setStyle("-fx-text-fill: #999; -fx-focus-color: transparent; -fx-faint-focus-color: transparent;");
+            updateLabelStyle(noResultLabel, "muted");
             mainContent.getChildren().add(noResultLabel);
         }
 
@@ -551,14 +562,14 @@ public class Center {
         if (hasUncategorizedTools) {
             Label uncategorizedLabel = new Label("存在未分类的工具，请在工具管理中为工具指定分类");
             uncategorizedLabel.setFont(getLabelFont());
-            uncategorizedLabel.setStyle("-fx-text-fill: #ff6600; -fx-focus-color: transparent; -fx-faint-focus-color: transparent;");
+            updateLabelStyle(uncategorizedLabel, "warning");
             mainContent.getChildren().add(uncategorizedLabel);
         }
 
         if (allTools.isEmpty()) {
             Label noToolLabel = new Label("暂无工具，请通过工具管理添加工具");
             noToolLabel.setFont(getLabelFont());
-            noToolLabel.setStyle("-fx-text-fill: #666; -fx-focus-color: transparent; -fx-faint-focus-color: transparent;");
+            updateLabelStyle(noToolLabel, "secondary");
             mainContent.getChildren().add(noToolLabel);
         }
     }
@@ -598,7 +609,7 @@ public class Center {
 
         VBox categoryPane = new VBox(10);
         categoryPane.setPadding(new Insets(15));
-        categoryPane.setStyle("-fx-background-color: white; -fx-border-color: #ddd; -fx-border-radius: 5; -fx-background-radius: 5; -fx-border-width: 1; -fx-focus-color: transparent; -fx-faint-focus-color: transparent; -fx-focus-traversable: false;");
+        updateCategoryPaneStyle(categoryPane);
         categoryPane.setFocusTraversable(false);
 
         // 创建标题栏（包含折叠按钮和标题）
@@ -608,13 +619,13 @@ public class Center {
 
         // 折叠/展开按钮
         Button collapseButton = new Button("▼");
-        collapseButton.setStyle("-fx-background-color: transparent; -fx-border: none; -fx-text-fill: #666; -fx-font-size: 14px; -fx-cursor: hand; -fx-padding: 2px; -fx-focus-color: transparent;");
+        updateCollapseButtonStyle(collapseButton);
         collapseButton.setPrefSize(20, 20);
 
         // 分类标题
         Label categoryLabel = new Label(category.getName());
         categoryLabel.setFont(getCategoryTitleFont());
-        categoryLabel.setStyle("-fx-text-fill: #333; -fx-focus-color: transparent; -fx-faint-focus-color: transparent;");
+        updateLabelStyle(categoryLabel, "primary");
         categoryLabel.setFocusTraversable(false);
 
         titleBox.getChildren().addAll(collapseButton, categoryLabel);
@@ -630,7 +641,7 @@ public class Center {
         if (categoryTools.isEmpty()) {
             Label noToolLabel = new Label("该分类下暂无工具");
             noToolLabel.setFont(getCategoryDescFont());
-            noToolLabel.setStyle("-fx-text-fill: #999; -fx-focus-color: transparent; -fx-faint-focus-color: transparent;");
+            updateLabelStyle(noToolLabel, "muted");
             toolFlowPane.getChildren().add(noToolLabel);
         } else {
             for (ToolItem tool : categoryTools) {
@@ -644,7 +655,7 @@ public class Center {
         if (category.getDescription() != null && !category.getDescription().trim().isEmpty()) {
             Label descLabel = new Label(category.getDescription());
             descLabel.setFont(getCategoryDescFont());
-            descLabel.setStyle("-fx-text-fill: #666; -fx-focus-color: transparent; -fx-faint-focus-color: transparent;");
+            updateLabelStyle(descLabel, "secondary");
             descLabel.setFocusTraversable(false);
             contentBox.getChildren().add(descLabel);
         }
@@ -695,8 +706,8 @@ public class Center {
         titleBox.setOnMouseClicked(e -> collapseButton.fire());
 
         // 按钮悬停效果
-        collapseButton.setOnMouseEntered(e -> collapseButton.setStyle("-fx-background-color: #f0f0f0; -fx-border: none; -fx-text-fill: #333; -fx-font-size: 14px; -fx-cursor: hand; -fx-padding: 2px; -fx-focus-color: transparent;"));
-        collapseButton.setOnMouseExited(e -> collapseButton.setStyle("-fx-background-color: transparent; -fx-border: none; -fx-text-fill: #666; -fx-font-size: 14px; -fx-cursor: hand; -fx-padding: 2px; -fx-focus-color: transparent;"));
+        collapseButton.setOnMouseEntered(e -> updateCollapseButtonHoverStyle(collapseButton));
+        collapseButton.setOnMouseExited(e -> updateCollapseButtonStyle(collapseButton));
 
         return categoryPane;
     }
@@ -705,22 +716,22 @@ public class Center {
         VBox toolBox = new VBox(5);
         toolBox.setPadding(new Insets(10));
         toolBox.setPrefSize(150, 80);
-        toolBox.setStyle("-fx-background-color: white; -fx-border-color: #ddd; -fx-border-radius: 5; -fx-background-radius: 5; -fx-cursor: hand; -fx-border-width: 1; -fx-focus-color: transparent; -fx-faint-focus-color: transparent; -fx-focus-traversable: false; -fx-border-insets: 0;");
+        updateToolBoxStyle(toolBox, false);
         toolBox.setAlignment(Pos.CENTER);
         toolBox.setFocusTraversable(false);
 
         // 鼠标悬停效果
         toolBox.setOnMouseEntered(e -> {
-            toolBox.setStyle("-fx-background-color: #f0f8ff; -fx-border-color: #4a90e2; -fx-border-radius: 5; -fx-background-radius: 5; -fx-cursor: hand; -fx-border-width: 1; -fx-focus-color: transparent; -fx-faint-focus-color: transparent; -fx-focus-traversable: false; -fx-border-insets: 0;");
+            updateToolBoxStyle(toolBox, true);
         });
         toolBox.setOnMouseExited(e -> {
-            toolBox.setStyle("-fx-background-color: white; -fx-border-color: #ddd; -fx-border-radius: 5; -fx-background-radius: 5; -fx-cursor: hand; -fx-border-width: 1; -fx-focus-color: transparent; -fx-faint-focus-color: transparent; -fx-focus-traversable: false; -fx-border-insets: 0;");
+            updateToolBoxStyle(toolBox, false);
         });
 
         // 工具名称
         Label nameLabel = new Label(tool.getName());
         nameLabel.setFont(getToolNameFont());
-        nameLabel.setStyle("-fx-text-fill: #333; -fx-focus-color: transparent; -fx-faint-focus-color: transparent;");
+        updateLabelStyle(nameLabel, "primary");
         nameLabel.setWrapText(true);
         nameLabel.setFocusTraversable(false);
 
@@ -729,7 +740,7 @@ public class Center {
         if (tool.getDescription() != null && !tool.getDescription().trim().isEmpty()) {
             descLabel.setText(tool.getDescription());
             descLabel.setFont(getToolDescFont());
-            descLabel.setStyle("-fx-text-fill: #666; -fx-focus-color: transparent; -fx-faint-focus-color: transparent;");
+            updateLabelStyle(descLabel, "secondary");
             descLabel.setWrapText(true);
             descLabel.setFocusTraversable(false);
         }
@@ -1150,6 +1161,427 @@ public class Center {
         } catch (Exception e) {
             System.err.println("加载分类折叠状态失败: " + e.getMessage());
             // 加载失败时使用默认的展开状态
+        }
+    }
+
+    /**
+     * 更新背景颜色
+     */
+    private void updateBackgroundColor() {
+        if (GlobalVariable.isDarkMode()) {
+            centerBox.setBackground(new Background(new BackgroundFill(Color.web("#1a202c"), null, null)));
+            centerBox.setStyle("-fx-background-color: #1a202c;");
+        } else {
+            centerBox.setBackground(new Background(new BackgroundFill(Color.WHITE, null, null)));
+            centerBox.setStyle("-fx-background-color: white;");
+        }
+    }
+
+    /**
+     * 更新滚动面板样式
+     */
+    private void updateScrollPanesStyle() {
+        if (GlobalVariable.isDarkMode()) {
+            mainScrollPane.setStyle("-fx-background-color: #1a202c; -fx-border-color: transparent;");
+        } else {
+            mainScrollPane.setStyle("-fx-background-color: white; -fx-border-color: transparent;");
+        }
+    }
+
+    /**
+     * 更新滚动内容样式
+     */
+    private void updateScrollContentStyle(VBox scrollContent) {
+        if (GlobalVariable.isDarkMode()) {
+            scrollContent.setBackground(new Background(new BackgroundFill(Color.web("#1a202c"), null, null)));
+            scrollContent.setStyle("-fx-background-color: #1a202c;");
+        } else {
+            scrollContent.setBackground(new Background(new BackgroundFill(Color.WHITE, null, null)));
+            scrollContent.setStyle("-fx-background-color: white;");
+        }
+    }
+
+    /**
+     * 更新工具栏样式
+     */
+    private void updateToolBarStyle(HBox toolBar) {
+        if (GlobalVariable.isDarkMode()) {
+            toolBar.setStyle("-fx-background-color: #2d3748; -fx-border-color: #4a5568; -fx-border-width: 0 0 1 0;");
+        } else {
+            toolBar.setStyle("-fx-background-color: #f0f0f0; -fx-border-color: #ddd; -fx-border-width: 0 0 1 0;");
+        }
+    }
+
+    /**
+     * 更新搜索框样式
+     */
+    private void updateSearchFieldStyle(TextField searchField) {
+        if (GlobalVariable.isDarkMode()) {
+            searchField.setStyle("-fx-background-color: #2d3748; -fx-border-color: #4a5568; -fx-border-radius: 4; -fx-padding: 8 12; -fx-font-size: 13px; -fx-border-width: 1; -fx-focus-color: transparent; -fx-faint-focus-color: transparent; -fx-focus-traversable: false; -fx-text-fill: #e2e8f0;");
+        } else {
+            searchField.setStyle("-fx-background-color: white; -fx-border-color: #ddd; -fx-border-radius: 4; -fx-padding: 8 12; -fx-font-size: 13px; -fx-border-width: 1; -fx-focus-color: transparent; -fx-faint-focus-color: transparent; -fx-focus-traversable: false;");
+        }
+    }
+
+    /**
+     * 更新主要文字颜色
+     */
+    private void updatePrimaryTextColor(Label label) {
+        if (GlobalVariable.isDarkMode()) {
+            label.setTextFill(Color.web("#e2e8f0"));
+        } else {
+            label.setTextFill(Color.web("#333"));
+        }
+    }
+
+    /**
+     * 更新次要文字颜色
+     */
+    private void updateSecondaryTextColor(Label label) {
+        if (GlobalVariable.isDarkMode()) {
+            label.setTextFill(Color.web("#a0aec0"));
+        } else {
+            label.setTextFill(Color.web("#666"));
+        }
+    }
+
+    /**
+     * 更新描述文字颜色
+     */
+    private void updateDescTextColor(Label label) {
+        if (GlobalVariable.isDarkMode()) {
+            label.setTextFill(Color.web("#cbd5e0"));
+        } else {
+            label.setTextFill(Color.web("#666"));
+        }
+    }
+
+    /**
+     * 更新按钮文字颜色
+     */
+    private void updateButtonTextColor(Button button) {
+        if (GlobalVariable.isDarkMode()) {
+            button.setStyle("-fx-background-color: transparent; -fx-border: none; -fx-text-fill: #a0aec0; -fx-cursor: hand; -fx-font-size: 14px; -fx-padding: 4;");
+        } else {
+            button.setStyle("-fx-background-color: transparent; -fx-border: none; -fx-text-fill: #999; -fx-cursor: hand; -fx-font-size: 14px; -fx-padding: 4;");
+        }
+    }
+
+    /**
+     * 更新搜索图标颜色
+     */
+    private void updateSearchIconColor(Label icon) {
+        if (GlobalVariable.isDarkMode()) {
+            icon.setStyle("-fx-text-fill: #a0aec0; -fx-font-size: 14px;");
+        } else {
+            icon.setStyle("-fx-text-fill: #666; -fx-font-size: 14px;");
+        }
+    }
+
+    /**
+     * 更新工具栏按钮样式
+     */
+    private void updateToolBarButtonStyle(Button button) {
+        String normalStyle, hoverStyle;
+
+        if (GlobalVariable.isDarkMode()) {
+            normalStyle = "-fx-background-color: #4a5568; -fx-border-color: #718096; -fx-border-radius: 4; -fx-background-radius: 4; -fx-border-width: 1; -fx-focus-color: transparent; -fx-faint-focus-color: transparent; -fx-padding: 8 16px; -fx-cursor: hand; -fx-text-fill: #e2e8f0;";
+            hoverStyle = "-fx-background-color: #718096; -fx-border-color: #a0aec0; -fx-border-radius: 4; -fx-background-radius: 4; -fx-border-width: 1; -fx-focus-color: transparent; -fx-faint-focus-color: transparent; -fx-padding: 8 16px; -fx-cursor: hand; -fx-text-fill: #e2e8f0;";
+        } else {
+            normalStyle = "-fx-background-color: #f8f9fa; -fx-border-color: #ddd; -fx-border-radius: 4; -fx-background-radius: 4; -fx-border-width: 1; -fx-focus-color: transparent; -fx-faint-focus-color: transparent; -fx-padding: 8 16px; -fx-cursor: hand;";
+            hoverStyle = "-fx-background-color: #e9ecef; -fx-border-color: #adb5bd; -fx-border-radius: 4; -fx-background-radius: 4; -fx-border-width: 1; -fx-focus-color: transparent; -fx-faint-focus-color: transparent; -fx-padding: 8 16px; -fx-cursor: hand;";
+        }
+
+        button.setStyle(normalStyle);
+
+        // 更新悬停效果
+        button.setOnMouseEntered(e -> button.setStyle(hoverStyle));
+        button.setOnMouseExited(e -> button.setStyle(normalStyle));
+    }
+
+    /**
+     * 更新分隔符样式
+     */
+    private void updateSeparatorStyle(Separator separator) {
+        if (GlobalVariable.isDarkMode()) {
+            separator.setStyle("-fx-background-color: #718096;");
+        } else {
+            separator.setStyle("-fx-background-color: #ddd;");
+        }
+    }
+
+    /**
+     * 创建分隔符Label
+     */
+    private Label createSeparatorLabel() {
+        Label separator = new Label("|");
+        separator.setFont(getButtonFont());
+        updateSeparatorLabelStyle(separator);
+        return separator;
+    }
+
+    /**
+     * 创建间距分隔符（使用透明Pane）
+     */
+    private Pane createSpacingSeparator() {
+        Pane separator = new Pane();
+        separator.setPrefWidth(2);
+        separator.setMaxHeight(20);
+        updateSpacingSeparatorStyle(separator);
+        return separator;
+    }
+
+    /**
+     * 更新间距分隔符样式
+     */
+    private void updateSpacingSeparatorStyle(Pane separator) {
+        if (GlobalVariable.isDarkMode()) {
+            separator.setStyle("-fx-background-color: #4a5568; -fx-background-radius: 1;");
+        } else {
+            separator.setStyle("-fx-background-color: #e9ecef; -fx-background-radius: 1;");
+        }
+    }
+
+    /**
+     * 更新分隔符Label样式
+     */
+    private void updateSeparatorLabelStyle(Label separator) {
+        if (GlobalVariable.isDarkMode()) {
+            separator.setStyle("-fx-text-fill: #a0aec0; -fx-font-weight: normal; -fx-opacity: 0.6;");
+        } else {
+            separator.setStyle("-fx-text-fill: #999; -fx-font-weight: normal; -fx-opacity: 0.8;");
+        }
+    }
+
+    /**
+     * 更新工具栏中所有分隔符Label的样式
+     */
+    private void updateToolBarSeparators(HBox toolBar) {
+        for (javafx.scene.Node node : toolBar.getChildren()) {
+            if (node instanceof Label && "|".equals(((Label) node).getText())) {
+                updateSeparatorLabelStyle((Label) node);
+            }
+        }
+    }
+
+    /**
+     * 更新状态栏按钮样式
+     */
+    private void updateStatusBarButtonStyle(Button button, String type) {
+        String style;
+
+        if (GlobalVariable.isDarkMode()) {
+            if ("toggle".equals(type)) {
+                style = "-fx-background-color: #4a5568; -fx-text-fill: #e2e8f0; -fx-border-radius: 3; -fx-background-radius: 3; -fx-cursor: hand; -fx-padding: 4 10px; -fx-border-color: #718096; -fx-border-width: 1;";
+            } else if ("clear".equals(type)) {
+                style = "-fx-background-color: #c53030; -fx-text-fill: white; -fx-border-radius: 3; -fx-background-radius: 3; -fx-cursor: hand; -fx-padding: 4 10px; -fx-border-color: #e53e3e; -fx-border-width: 1;";
+            } else {
+                style = "-fx-background-color: #4a5568; -fx-text-fill: #e2e8f0; -fx-border-radius: 3; -fx-background-radius: 3; -fx-cursor: hand; -fx-padding: 4 10px; -fx-border-color: #718096; -fx-border-width: 1;";
+            }
+        } else {
+            if ("toggle".equals(type)) {
+                style = "-fx-background-color: #6c757d; -fx-text-fill: white; -fx-border-radius: 3; -fx-background-radius: 3; -fx-cursor: hand; -fx-padding: 4 10px;";
+            } else if ("clear".equals(type)) {
+                style = "-fx-background-color: #dc3545; -fx-text-fill: white; -fx-border-radius: 3; -fx-background-radius: 3; -fx-cursor: hand; -fx-padding: 4 10px;";
+            } else {
+                style = "-fx-background-color: #6c757d; -fx-text-fill: white; -fx-border-radius: 3; -fx-background-radius: 3; -fx-cursor: hand; -fx-padding: 4 10px;";
+            }
+        }
+
+        button.setStyle(style);
+    }
+
+    /**
+     * 更新搜索框容器样式
+     */
+    private void updateSearchBoxStyle(HBox searchBox) {
+        if (GlobalVariable.isDarkMode()) {
+            searchBox.setStyle("-fx-background-color: #2d3748; -fx-border-color: #4a5568; -fx-border-radius: 4; -fx-padding: 6 10; -fx-border-width: 1; -fx-focus-color: transparent; -fx-faint-focus-color: transparent;");
+        } else {
+            searchBox.setStyle("-fx-background-color: white; -fx-border-color: #ddd; -fx-border-radius: 4; -fx-padding: 6 10; -fx-border-width: 1; -fx-focus-color: transparent; -fx-faint-focus-color: transparent;");
+        }
+    }
+
+    /**
+     * 更新通用标签样式（带焦点样式）
+     */
+    private void updateLabelStyle(Label label, String colorType) {
+        String baseStyle = "-fx-focus-color: transparent; -fx-faint-focus-color: transparent;";
+
+        switch (colorType) {
+            case "primary":
+                if (GlobalVariable.isDarkMode()) {
+                    label.setStyle("-fx-text-fill: #e2e8f0; " + baseStyle);
+                } else {
+                    label.setStyle("-fx-text-fill: #333; " + baseStyle);
+                }
+                break;
+            case "secondary":
+                if (GlobalVariable.isDarkMode()) {
+                    label.setStyle("-fx-text-fill: #a0aec0; " + baseStyle);
+                } else {
+                    label.setStyle("-fx-text-fill: #666; " + baseStyle);
+                }
+                break;
+            case "muted":
+                if (GlobalVariable.isDarkMode()) {
+                    label.setStyle("-fx-text-fill: #718096; " + baseStyle);
+                } else {
+                    label.setStyle("-fx-text-fill: #999; " + baseStyle);
+                }
+                break;
+            case "search":
+                if (GlobalVariable.isDarkMode()) {
+                    label.setStyle("-fx-text-fill: #63b3ed; -fx-font-weight: bold; " + baseStyle);
+                } else {
+                    label.setStyle("-fx-text-fill: #4a90e2; -fx-font-weight: bold; " + baseStyle);
+                }
+                break;
+            case "warning":
+                // 警告颜色保持不变
+                label.setStyle("-fx-text-fill: #ff6600; " + baseStyle);
+                break;
+        }
+    }
+
+    /**
+     * 更新折叠按钮样式
+     */
+    private void updateCollapseButtonStyle(Button button) {
+        if (GlobalVariable.isDarkMode()) {
+            button.setStyle("-fx-background-color: transparent; -fx-border: none; -fx-text-fill: #a0aec0; -fx-font-size: 14px; -fx-cursor: hand; -fx-padding: 2px; -fx-focus-color: transparent;");
+        } else {
+            button.setStyle("-fx-background-color: transparent; -fx-border: none; -fx-text-fill: #666; -fx-font-size: 14px; -fx-cursor: hand; -fx-padding: 2px; -fx-focus-color: transparent;");
+        }
+    }
+
+    /**
+     * 更新折叠按钮悬停样式
+     */
+    private void updateCollapseButtonHoverStyle(Button button) {
+        if (GlobalVariable.isDarkMode()) {
+            button.setStyle("-fx-background-color: #4a5568; -fx-border: none; -fx-text-fill: #e2e8f0; -fx-font-size: 14px; -fx-cursor: hand; -fx-padding: 2px; -fx-focus-color: transparent;");
+        } else {
+            button.setStyle("-fx-background-color: #f0f0f0; -fx-border: none; -fx-text-fill: #333; -fx-font-size: 14px; -fx-cursor: hand; -fx-padding: 2px; -fx-focus-color: transparent;");
+        }
+    }
+
+    /**
+     * 更新状态栏样式
+     */
+    private void updateStatusBarStyle(HBox statusBar) {
+        if (GlobalVariable.isDarkMode()) {
+            statusBar.setStyle("-fx-background-color: #2d3748; -fx-border-color: #4a5568; -fx-border-width: 1 0 0 0; -fx-padding: 10 15;");
+        } else {
+            statusBar.setStyle("-fx-background-color: #ffffff; -fx-border-color: #ddd; -fx-border-width: 1 0 0 0; -fx-padding: 10 15;");
+        }
+    }
+
+    /**
+     * 更新分类面板样式
+     */
+    private void updateCategoryPaneStyle(VBox categoryPane) {
+        if (GlobalVariable.isDarkMode()) {
+            categoryPane.setStyle("-fx-background-color: #2d3748; -fx-border-color: #4a5568; -fx-border-radius: 5; -fx-background-radius: 5; -fx-border-width: 1; -fx-focus-color: transparent; -fx-faint-focus-color: transparent; -fx-focus-traversable: false;");
+        } else {
+            categoryPane.setStyle("-fx-background-color: white; -fx-border-color: #ddd; -fx-border-radius: 5; -fx-background-radius: 5; -fx-border-width: 1; -fx-focus-color: transparent; -fx-faint-focus-color: transparent; -fx-focus-traversable: false;");
+        }
+    }
+
+    /**
+     * 更新工具框样式
+     */
+    private void updateToolBoxStyle(Region toolBox, boolean isSelected) {
+        if (GlobalVariable.isDarkMode()) {
+            if (isSelected) {
+                toolBox.setStyle("-fx-background-color: #4a5568; -fx-border-color: #4285f4; -fx-border-radius: 5; -fx-background-radius: 5; -fx-cursor: hand; -fx-border-width: 1; -fx-focus-color: transparent; -fx-faint-focus-color: transparent; -fx-focus-traversable: false; -fx-border-insets: 0;");
+            } else {
+                toolBox.setStyle("-fx-background-color: #2d3748; -fx-border-color: #4a5568; -fx-border-radius: 5; -fx-background-radius: 5; -fx-cursor: hand; -fx-border-width: 1; -fx-focus-color: transparent; -fx-faint-focus-color: transparent; -fx-focus-traversable: false; -fx-border-insets: 0;");
+            }
+        } else {
+            if (isSelected) {
+                toolBox.setStyle("-fx-background-color: #f0f8ff; -fx-border-color: #4a90e2; -fx-border-radius: 5; -fx-background-radius: 5; -fx-cursor: hand; -fx-border-width: 1; -fx-focus-color: transparent; -fx-faint-focus-color: transparent; -fx-focus-traversable: false; -fx-border-insets: 0;");
+            } else {
+                toolBox.setStyle("-fx-background-color: white; -fx-border-color: #ddd; -fx-border-radius: 5; -fx-background-radius: 5; -fx-cursor: hand; -fx-border-width: 1; -fx-focus-color: transparent; -fx-faint-focus-color: transparent; -fx-focus-traversable: false; -fx-border-insets: 0;");
+            }
+        }
+    }
+
+    /**
+     * 刷新所有组件的样式
+     */
+    public static void refreshStyles() {
+        if (instance != null) {
+            Platform.runLater(() -> {
+                instance.updateBackgroundColor();
+                instance.updateScrollPanesStyle();
+                if (instance.mainScrollPane != null && instance.mainScrollPane.getContent() instanceof VBox) {
+                    instance.updateScrollContentStyle((VBox) instance.mainScrollPane.getContent());
+                }
+                if (instance.statusBar != null) {
+                    instance.updateStatusBarStyle(instance.statusBar);
+                }
+                // 重新渲染分类面板
+                instance.refreshCategories();
+            });
+        }
+    }
+
+    /**
+     * 刷新分类面板
+     */
+    private void refreshCategories() {
+        // 调用refreshToolDisplay方法来重新加载工具显示
+        refreshToolDisplay();
+    }
+
+    /**
+     * 刷新所有按钮和分隔符样式（用于动态黑暗模式切换）
+     */
+    public static void refreshButtonAndSeparatorStyles() {
+        if (instance != null) {
+            Platform.runLater(() -> {
+                try {
+                    // 刷新工具栏中的按钮和分隔符
+                    if (instance.centerBox != null && !instance.centerBox.getChildren().isEmpty()) {
+                        HBox toolBar = (HBox) instance.centerBox.getChildren().get(0);
+                        if (toolBar != null) {
+                            // 更新所有按钮
+                            for (javafx.scene.Node node : toolBar.getChildren()) {
+                                if (node instanceof Button) {
+                                    instance.updateToolBarButtonStyle((Button) node);
+                                }
+                            }
+                            // 更新所有分隔符Label
+                            instance.updateToolBarSeparators(toolBar);
+                        }
+                    }
+
+                    // 刷新状态栏中的按钮
+                    if (instance.statusBar != null) {
+                        for (javafx.scene.Node node : instance.statusBar.getChildren()) {
+                            if (node instanceof HBox) {
+                                HBox controlBox = (HBox) node;
+                                for (javafx.scene.Node child : controlBox.getChildren()) {
+                                    if (child instanceof Button) {
+                                        Button btn = (Button) child;
+                                        // 根据按钮文本判断类型
+                                        if ("隐藏".equals(btn.getText()) || "显示".equals(btn.getText())) {
+                                            instance.updateStatusBarButtonStyle(btn, "toggle");
+                                        } else if ("清理".equals(btn.getText())) {
+                                            instance.updateStatusBarButtonStyle(btn, "clear");
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    System.out.println("所有按钮和分隔符样式已刷新");
+                } catch (Exception e) {
+                    System.err.println("刷新按钮和分隔符样式时发生错误: " + e.getMessage());
+                }
+            });
         }
     }
 }

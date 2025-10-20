@@ -1,0 +1,678 @@
+/* 黑暗模式样式 */
+
+/* 整个TabPane容器 */
+.root.dark .tab-pane {
+    -fx-background-color: #2d3748;
+    -fx-tab-min-width: 120px;
+    -fx-tab-max-width: 200px;
+}
+
+/* 标签头区域 - 黑暗模式 */
+.root.dark .tab-header-area {
+    -fx-background-color: #2d3748;
+    -fx-padding: 0 0 0 10px;
+}
+
+/* 标签头背景 - 黑暗模式 */
+.root.dark .tab-header-background {
+    -fx-background-color: #2d3748;
+    -fx-border-color: #4a5568;
+    -fx-border-width: 0 0 1px 0;
+}
+
+/* 单个标签样式 - 黑暗模式 */
+.root.dark .tab {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-background-radius: 0;
+    -fx-padding: 12px 24px;
+    -fx-cursor: hand;
+    -fx-border-width: 0 0 2px 0;
+    -fx-border-color: transparent;
+}
+
+/* 标签文字样式 - 黑暗模式 */
+.root.dark .tab .tab-label {
+    -fx-text-fill: #e2e8f0;
+    -fx-font-family: 'Segoe UI', sans-serif;
+    -fx-font-weight: 600;
+    -fx-font-size: 14px;
+}
+
+/* 选中标签样式 - 黑暗模式 */
+.root.dark .tab:selected {
+    -fx-background-color: #2d3748;
+    -fx-border-color: #4285f4;
+}
+
+/* 选中标签文字样式 - 黑暗模式 */
+.root.dark .tab:selected .tab-label {
+    -fx-text-fill: #4285f4;
+}
+
+/* 标签悬停效果 - 黑暗模式 */
+.root.dark .tab:hover {
+    -fx-background-color: #4a5568;
+}
+
+/* 内容区域样式 - 黑暗模式 */
+.root.dark .tab-content-area {
+    -fx-background-color: #1a202c;
+    -fx-padding: 20;
+}
+
+/* 文本框样式 - 黑暗模式 */
+.root.dark .text-field {
+    -fx-accent: #4285f4;
+    -fx-background-color: #4a5568, #2d3748;
+    -fx-background-insets: 0, 1 1 1 1;
+    -fx-background-radius: 0;
+    -fx-font-family: "Consolas";
+    -fx-text-fill: #e2e8f0;
+    -fx-border-color: #718096;
+    -fx-border-width: 1px;
+}
+
+.root.dark .text-field:focused {
+    -fx-background-color: #4285f4, #2d3748;
+    -fx-border-color: #4285f4;
+    -fx-text-fill: #e2e8f0;
+}
+
+/* 强制所有状态下都是黑暗模式 */
+.root.dark .text-input {
+    -fx-background-color: #4a5568 !important;
+    -fx-text-fill: #e2e8f0 !important;
+    -fx-border-color: #718096 !important;
+}
+
+.root.dark .text-input:focused {
+    -fx-background-color: #2d3748 !important;
+    -fx-border-color: #4285f4 !important;
+    -fx-text-fill: #e2e8f0 !important;
+}
+
+.root.dark .text-input:hover {
+    -fx-background-color: #4a5568 !important;
+    -fx-text-fill: #e2e8f0 !important;
+}
+
+/* 处理编辑时的样式重置问题 */
+.root.dark .text-field {
+    -fx-background-color: #4a5568 !important;
+    -fx-text-fill: #e2e8f0 !important;
+    -fx-border-color: #718096 !important;
+}
+
+.root.dark .text-field:focused {
+    -fx-background-color: #2d3748 !important;
+    -fx-border-color: #4285f4 !important;
+    -fx-text-fill: #e2e8f0 !important;
+}
+
+/* 强制覆盖任何可能的重置样式 */
+.root.dark .text-field:disabled {
+    -fx-background-color: #4a5568 !important;
+    -fx-text-fill: #e2e8f0 !important;
+    -fx-border-color: #718096 !important;
+}
+
+/* ComboBox 基础样式 */
+.root.dark .combo-box {
+    -fx-background-color: #4a5568;
+    -fx-border-color: #718096;
+    -fx-border-width: 1px;
+    -fx-border-radius: 4;
+    -fx-background-radius: 4;
+    -fx-text-fill: #e2e8f0;
+}
+
+.root.dark .combo-box:focused {
+    -fx-border-color: #4285f4;
+    -fx-background-color: #2d3748;
+}
+
+/* ComboBox 箭头按钮样式 */
+.root.dark .combo-box .arrow-button {
+    -fx-background-color: #4a5568;
+    -fx-border-color: #718096;
+}
+
+.root.dark .combo-box .arrow-button:hover {
+    -fx-background-color: #718096;
+}
+
+.root.dark .combo-box .arrow {
+    -fx-background-color: #e2e8f0;
+}
+
+/* ComboBox 编辑区域样式 */
+.root.dark .combo-box .text-field {
+    -fx-background-color: #4a5568 !important;
+    -fx-text-fill: #e2e8f0 !important;
+    -fx-border-color: transparent !important;
+}
+
+.root.dark .combo-box .text-field:focused {
+    -fx-background-color: #2d3748 !important;
+    -fx-border-color: transparent !important;
+    -fx-text-fill: #e2e8f0 !important;
+}
+
+/* ComboBox 下拉列表样式 */
+.root.dark .combo-box-popup {
+    -fx-background-color: #2d3748;
+    -fx-border-color: #4a5568;
+    -fx-effect: null;
+}
+
+.root.dark .combo-box-popup .list-view {
+    -fx-background-color: #2d3748;
+    -fx-border-color: #4a5568;
+}
+
+.root.dark .combo-box-popup .list-cell {
+    -fx-background-color: #2d3748;
+    -fx-text-fill: #e2e8f0;
+    -fx-border-color: transparent;
+}
+
+.root.dark .combo-box-popup .list-cell:hover {
+    -fx-background-color: #4a5568;
+    -fx-text-fill: #e2e8f0;
+}
+
+.root.dark .combo-box-popup .list-cell:selected {
+    -fx-background-color: #4285f4;
+    -fx-text-fill: white;
+}
+
+.root.dark .combo-box-popup .list-cell:filled:hover {
+    -fx-background-color: #4a5568;
+    -fx-text-fill: #e2e8f0;
+}
+
+/* ComboBox 禁用状态 */
+.root.dark .combo-box:disabled {
+    -fx-opacity: 0.6;
+}
+
+.root.dark .combo-box:disabled .text-field {
+    -fx-background-color: #4a5568 !important;
+    -fx-text-fill: #a0aec0 !important;
+}
+
+/* 按钮样式 - 黑暗模式 */
+.root.dark .button {
+    -fx-background-color: #4a5568;
+    -fx-text-fill: #e2e8f0;
+    -fx-border-color: #718096;
+    -fx-border-radius: 3;
+    -fx-background-radius: 3;
+}
+
+.root.dark .button:hover {
+    -fx-background-color: #718096;
+}
+
+.root.dark .button:pressed {
+    -fx-background-color: #2d3748;
+}
+
+/* 主要按钮样式 - 黑暗模式 */
+.root.dark .button.primary {
+    -fx-background-color: #4285f4;
+    -fx-text-fill: white;
+}
+
+.root.dark .button.primary:hover {
+    -fx-background-color: #3367d6;
+}
+
+/* 危险按钮样式 - 黑暗模式 */
+.root.dark .button.danger {
+    -fx-background-color: #dc3545;
+    -fx-text-fill: white;
+}
+
+.root.dark .button.danger:hover {
+    -fx-background-color: #c82333;
+}
+
+/* 滚动条样式 - 黑暗模式 */
+.root.dark .scroll-bar {
+    -fx-background-color: #2d3748;
+}
+
+.root.dark .scroll-bar .thumb {
+    -fx-background-color: #4a5568;
+    -fx-background-radius: 4px;
+}
+
+.root.dark .scroll-bar .thumb:hover {
+    -fx-background-color: #718096;
+}
+
+.root.dark .scroll-bar .track {
+    -fx-background-color: #1a202c;
+}
+
+/* 工具提示样式 - 黑暗模式 */
+.root.dark .tooltip {
+    -fx-background-color: #2d3748;
+    -fx-text-fill: #e2e8f0;
+    -fx-border-color: #4a5568;
+}
+
+/* 选择框样式 - 黑暗模式 */
+.root.dark .check-box {
+    -fx-text-fill: #e2e8f0;
+}
+
+.root.dark .check-box .box {
+    -fx-background-color: #4a5568;
+    -fx-border-color: #718096;
+}
+
+.root.dark .check-box:selected .box {
+    -fx-background-color: #4285f4;
+    -fx-border-color: #4285f4;
+}
+
+/* 单选框样式 - 黑暗模式 */
+.root.dark .radio-button {
+    -fx-text-fill: #e2e8f0;
+}
+
+.root.dark .radio-button .radio {
+    -fx-background-color: #4a5568;
+    -fx-border-color: #718096;
+}
+
+.root.dark .radio-button:selected .radio {
+    -fx-background-color: #4285f4;
+    -fx-border-color: #4285f4;
+}
+
+/* 进度条样式 - 黑暗模式 */
+.root.dark .progress-bar {
+    -fx-accent: #4285f4;
+}
+
+.root.dark .progress-bar .track {
+    -fx-background-color: #4a5568;
+}
+
+/* 分隔符样式 - 黑暗模式 */
+.root.dark .separator {
+    -fx-background-color: #718096;
+}
+
+/* 菜单样式 - 黑暗模式 */
+.root.dark .menu-bar {
+    -fx-background-color: #2d3748;
+}
+
+.root.dark .menu-bar .label {
+    -fx-text-fill: #e2e8f0;
+}
+
+.root.dark .menu-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: #e2e8f0;
+}
+
+.root.dark .menu-button:hover {
+    -fx-background-color: #4a5568;
+}
+
+.root.dark .context-menu {
+    -fx-background-color: #2d3748;
+    -fx-border-color: #4a5568;
+}
+
+.root.dark .menu-item {
+    -fx-background-color: transparent;
+    -fx-text-fill: #e2e8f0;
+}
+
+.root.dark .menu-item:hover {
+    -fx-background-color: #4a5568;
+}
+
+/* 对话框样式 - 黑暗模式 */
+.root.dark .dialog-pane {
+    -fx-background-color: #2d3748;
+}
+
+.root.dark .dialog-pane .header-panel {
+    -fx-background-color: #4a5568;
+}
+
+.root.dark .dialog-pane .header-panel .label {
+    -fx-text-fill: #e2e8f0;
+}
+
+.root.dark .dialog-pane .content {
+    -fx-background-color: #2d3748;
+    -fx-text-fill: #e2e8f0;
+}
+
+/* Alert对话框文字样式 - 黑暗模式 */
+.root.dark .alert {
+    -fx-background-color: #2d3748;
+}
+
+.root.dark .alert .dialog-pane {
+    -fx-background-color: #2d3748;
+}
+
+.root.dark .alert .dialog-pane .content {
+    -fx-background-color: #2d3748;
+    -fx-text-fill: #e2e8f0;
+}
+
+.root.dark .alert .dialog-pane .content .label {
+    -fx-text-fill: #e2e8f0 !important;
+}
+
+/* Alert对话框按钮样式 - 黑暗模式 */
+.root.dark .alert .button-bar {
+    -fx-background-color: #2d3748;
+}
+
+.root.dark .alert .button-bar .button {
+    -fx-background-color: #4a5568;
+    -fx-text-fill: #e2e8f0;
+    -fx-border-color: #718096;
+}
+
+.root.dark .alert .button-bar .button:hover {
+    -fx-background-color: #718096;
+    -fx-border-color: #4285f4;
+}
+
+.root.dark .alert .button-bar .button:default {
+    -fx-background-color: #4285f4;
+    -fx-text-fill: white;
+    -fx-border-color: #2563eb;
+}
+
+.root.dark .alert .button-bar .button:default:hover {
+    -fx-background-color: #3367d6;
+    -fx-border-color: #1e40af;
+}
+
+/* 表格样式 - 黑暗模式 */
+.root.dark .table-view {
+    -fx-background-color: #2d3748;
+    -fx-border-color: #4a5568;
+}
+
+.root.dark .table-view .column-header-background {
+    -fx-background-color: #4a5568;
+    -fx-border-color: #718096;
+}
+
+.root.dark .table-view .column-header {
+    -fx-background-color: #4a5568;
+    -fx-text-fill: #e2e8f0;
+    -fx-border-color: #718096;
+}
+
+.root.dark .table-view .table-cell {
+    -fx-background-color: #2d3748;
+    -fx-text-fill: #e2e8f0;
+    -fx-border-color: #4a5568;
+}
+
+/* 选中行的单元格样式 - 更高优先级 */
+.root.dark .table-view .table-row-cell:selected .table-cell {
+    -fx-background-color: #4285f4;
+    -fx-text-fill: white;
+    -fx-border-color: #2563eb;
+}
+
+/* 选中行样式 - 强制覆盖 */
+.root.dark .table-view .table-row-cell:selected {
+    -fx-background-color: #4285f4 !important;
+    -fx-border-color: #2563eb !important;
+}
+
+/* 确保所有选中的表格行都可见 */
+.root.dark .table-row-cell:selected {
+    -fx-background-color: #4285f4 !important;
+}
+
+.root.dark .table-row-cell:selected .table-cell {
+    -fx-background-color: #4285f4 !important;
+    -fx-text-fill: white !important;
+}
+
+.root.dark .table-view .table-row-cell:hover {
+    -fx-background-color: #4a5568;
+}
+
+/* 列表样式 - 黑暗模式 */
+.root.dark .list-view {
+    -fx-background-color: #2d3748;
+    -fx-border-color: #4a5568;
+}
+
+.root.dark .list-view .list-cell {
+    -fx-background-color: #2d3748;
+    -fx-text-fill: #e2e8f0;
+    -fx-border-color: #4a5568;
+}
+
+.root.dark .list-view .list-cell:selected {
+    -fx-background-color: #4285f4;
+}
+
+.root.dark .list-view .list-cell:hover {
+    -fx-background-color: #4a5568;
+}
+
+/* 通用标签样式 - 黑暗模式 */
+.root.dark .label {
+    -fx-text-fill: #e2e8f0;
+}
+
+/* 通用按钮样式 - 黑暗模式 */
+.root.dark .button {
+    -fx-background-color: #4a5568;
+    -fx-text-fill: #e2e8f0;
+    -fx-border-color: #718096;
+}
+
+.root.dark .button:hover {
+    -fx-background-color: #718096;
+}
+
+.root.dark .button:pressed {
+    -fx-background-color: #2d3748;
+}
+
+/* 文本输入框样式 - 黑暗模式 */
+.root.dark .text-input {
+    -fx-background-color: #2d3748;
+    -fx-text-fill: #e2e8f0;
+    -fx-border-color: #4a5568;
+    -fx-prompt-text-fill: #718096;
+}
+
+.root.dark .text-input:focused {
+    -fx-border-color: #4285f4;
+    -fx-background-color: #2d3748;
+}
+
+/* 区域背景样式 - 黑暗模式 */
+.root.dark .pane {
+    -fx-background-color: #2d3748;
+}
+
+.root.dark .hbox {
+    -fx-background-color: #2d3748;
+}
+
+.root.dark .vbox {
+    -fx-background-color: #2d3748;
+}
+
+.root.dark .scroll-pane {
+    -fx-background-color: #2d3748;
+    -fx-border-color: #4a5568;
+}
+
+.root.dark .scroll-pane .viewport {
+    -fx-background-color: #2d3748;
+}
+
+/* 加载标签样式 - 黑暗模式 */
+.root.dark .loading-label {
+    -fx-text-fill: #a0aec0;
+}
+
+/* 搜索相关样式 - 黑暗模式 */
+.root.dark .search-box {
+    -fx-background-color: #2d3748;
+    -fx-border-color: #4a5568;
+}
+
+.root.dark .clear-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: #a0aec0;
+}
+
+.root.dark .clear-button:hover {
+    -fx-text-fill: #e2e8f0;
+}
+
+/* 工具按钮样式 - 黑暗模式 */
+.root.dark .tool-button {
+    -fx-background-color: #4a5568;
+    -fx-border-color: #718096;
+    -fx-text-fill: #e2e8f0;
+}
+
+.root.dark .tool-button:hover {
+    -fx-background-color: #718096;
+    -fx-border-color: #4285f4;
+}
+
+/* 状态栏样式 - 黑暗模式 */
+.root.dark .status-bar {
+    -fx-background-color: #2d3748;
+    -fx-border-color: #4a5568;
+}
+
+.root.dark .status-label {
+    -fx-text-fill: #e2e8f0;
+}
+
+.root.dark .status-content {
+    -fx-text-fill: #a0aec0;
+}
+
+
+/* TabPane样式 - 黑暗模式 */
+.root.dark .tab-pane {
+    -fx-background-color: #2d3748;
+}
+
+.root.dark .tab-pane .tab-header-area {
+    -fx-background-color: #2d3748;
+}
+
+.root.dark .tab-pane .tab-header-background {
+    -fx-background-color: #2d3748;
+    -fx-border-color: #4a5568;
+}
+
+.root.dark .tab-pane .tab {
+    -fx-background-color: transparent;
+}
+
+.root.dark .tab-pane .tab:selected {
+    -fx-background-color: #4285f4;
+}
+
+.root.dark .tab-pane .tab .tab-label {
+    -fx-text-fill: #e2e8f0;
+}
+
+.root.dark .tab-pane .tab:selected .tab-label {
+    -fx-text-fill: white;
+}
+
+/* FlowPane样式 - 黑暗模式 */
+.root.dark .flow-pane {
+    -fx-background-color: #2d3748;
+}
+
+/* 网格布局样式 - 黑暗模式 */
+.root.dark .grid-pane {
+    -fx-background-color: #2d3748;
+}
+
+/* 边框面板样式 - 黑暗模式 */
+.root.dark .border-pane {
+    -fx-background-color: #2d3748;
+}
+
+/* 通用容器样式 - 黑暗模式 */
+.root.dark .container {
+    -fx-background-color: #2d3748;
+}
+
+/* FileChooser 样式 - 黑暗模式 */
+.root.dark .file-chooser {
+    -fx-background-color: #2d3748;
+}
+
+.root.dark .file-chooser .dialog-pane {
+    -fx-background-color: #2d3748;
+}
+
+.root.dark .file-chooser .label {
+    -fx-text-fill: #e2e8f0;
+}
+
+.root.dark .file-chooser .button {
+    -fx-background-color: #4a5568;
+    -fx-text-fill: #e2e8f0;
+}
+
+.root.dark .file-chooser .button:hover {
+    -fx-background-color: #718096;
+}
+
+.root.dark .file-chooser .list-view {
+    -fx-background-color: #2d3748;
+    -fx-border-color: #4a5568;
+}
+
+.root.dark .file-chooser .list-cell {
+    -fx-background-color: #2d3748;
+    -fx-text-fill: #e2e8f0;
+}
+
+.root.dark .file-chooser .list-cell:selected {
+    -fx-background-color: #4285f4;
+    -fx-text-fill: white;
+}
+
+.root.dark .file-chooser .tree-view {
+    -fx-background-color: #2d3748;
+    -fx-border-color: #4a5568;
+}
+
+.root.dark .file-chooser .tree-cell {
+    -fx-background-color: #2d3748;
+    -fx-text-fill: #e2e8f0;
+}
+
+.root.dark .file-chooser .tree-cell:selected {
+    -fx-background-color: #4285f4;
+    -fx-text-fill: white;
+}

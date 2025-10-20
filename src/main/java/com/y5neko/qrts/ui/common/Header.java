@@ -1,5 +1,7 @@
 package com.y5neko.qrts.ui.common;
 
+import com.y5neko.qrts.config.GlobalVariable;
+import com.y5neko.qrts.service.DataManager;
 import com.y5neko.qrts.ui.dialog.AboutDialog;
 import com.y5neko.qrts.ui.dialog.SettingsDialog;
 import com.y5neko.qrts.ui.event.Components;
@@ -24,6 +26,7 @@ import static com.y5neko.qrts.config.GlobalVariable.icon;
 
 public class Header {
     private MenuBar menuBar;
+    private MenuItem darkModeMenuItem; // 存储黑暗模式菜单项引用
 
     private double xOffset = 0;
     private double yOffset = 0;
@@ -56,6 +59,7 @@ public class Header {
         // 设置第二个网格为标题
         Label titleLabel = new Label("QuickRedTools");
         titleLabel.setFont(new Font("Consolas Bold", 20));
+        updateTitleLabelStyle(titleLabel);
 
         gridPaneToolBar.add(titleLabel, 1, 0, 1, 1);
         GridPane.setHalignment(titleLabel, HPos.CENTER);
@@ -94,7 +98,7 @@ public class Header {
         titleBar.setAlignment(Pos.CENTER); // 居中布局
         titleBar.setPadding(new Insets(0, 0, 0, 0));
         titleBar.setSpacing(0);   // 设置标题栏内间距
-        titleBar.setBackground(new Background(new BackgroundFill(Color.WHITE, null, null)));
+        updateTitleBarStyle(titleBar);
 
         return titleBar;
     }
@@ -104,7 +108,7 @@ public class Header {
      */
     private void buildMenu(){
         menuBar = new MenuBar();
-        menuBar.setStyle("-fx-background-color: transparent;");
+        updateMenuBarStyle(menuBar);
         menuBar.setPadding(new Insets(0));
 
         Menu settingMenu = new Menu("设置");
@@ -113,8 +117,15 @@ public class Header {
 
         // ----------设置菜单----------
         MenuItem fontSettingButton = new MenuItem("字体设置");
-        settingMenu.getItems().addAll(fontSettingButton);
+        darkModeMenuItem = new MenuItem("黑暗模式");
+
+        settingMenu.getItems().addAll(fontSettingButton, darkModeMenuItem);
+
         fontSettingButton.setOnAction(event -> new SettingsDialog().show());
+
+        // 黑暗模式切换功能
+        updateDarkModeMenuItem();
+        darkModeMenuItem.setOnAction(event -> toggleDarkMode());
 
         // ----------帮助菜单----------
         // ----------第一个按钮----------
@@ -171,5 +182,128 @@ public class Header {
         } catch (Exception e) {
             System.err.println("无法打开网页: " + e.getMessage());
         }
+    }
+
+    /**
+     * 更新标题栏样式
+     */
+    private void updateTitleBarStyle(HBox titleBar) {
+        if (GlobalVariable.isDarkMode()) {
+            titleBar.setBackground(new Background(new BackgroundFill(Color.web("#2d3748"), null, null)));
+        } else {
+            titleBar.setBackground(new Background(new BackgroundFill(Color.WHITE, null, null)));
+        }
+    }
+
+    /**
+     * 更新标题标签样式
+     */
+    private void updateTitleLabelStyle(Label titleLabel) {
+        if (GlobalVariable.isDarkMode()) {
+            titleLabel.setTextFill(Color.web("#e2e8f0"));
+        } else {
+            titleLabel.setTextFill(Color.BLACK);
+        }
+    }
+
+    /**
+     * 更新菜单栏样式
+     */
+    private void updateMenuBarStyle(MenuBar menuBar) {
+        if (GlobalVariable.isDarkMode()) {
+            menuBar.setStyle("-fx-background-color: transparent;");
+        } else {
+            menuBar.setStyle("-fx-background-color: transparent;");
+        }
+    }
+
+    /**
+     * 刷新Header样式
+     */
+    public static void refreshHeaderStyles() {
+        // 静态方法用于刷新所有Header实例的样式
+        // 由于Header实例在UI类中创建，我们需要通过UI类来刷新
+        javafx.application.Platform.runLater(() -> {
+            // 这个方法将被UI类调用，来刷新Header组件的样式
+        });
+    }
+
+    /**
+     * 更新标题栏样式（公共方法）
+     */
+    public void updateTitleBarStylePublic(HBox titleBar) {
+        updateTitleBarStyle(titleBar);
+
+        // 递归更新所有子组件中的标签
+        updateAllLabels(titleBar);
+    }
+
+    /**
+     * 递归更新容器中所有标签的样式
+     */
+    private void updateAllLabels(javafx.scene.Parent container) {
+        for (javafx.scene.Node node : container.getChildrenUnmodifiable()) {
+            if (node instanceof Label) {
+                updateTitleLabelStyle((Label) node);
+            } else if (node instanceof javafx.scene.Parent) {
+                updateAllLabels((javafx.scene.Parent) node);
+            }
+        }
+    }
+
+    /**
+     * 更新标题标签样式（公共方法）
+     */
+    public void updateTitleLabelStylePublic(Label titleLabel) {
+        updateTitleLabelStyle(titleLabel);
+    }
+
+    /**
+     * 更新菜单栏样式（公共方法）
+     */
+    public void updateMenuBarStylePublic(MenuBar menuBar) {
+        updateMenuBarStyle(menuBar);
+        // 同时更新黑暗模式菜单项文本
+        updateDarkModeMenuItem();
+    }
+
+    /**
+     * 更新黑暗模式菜单项文本
+     */
+    private void updateDarkModeMenuItem() {
+        if (darkModeMenuItem != null) {
+            boolean isDarkMode = GlobalVariable.isDarkMode();
+            darkModeMenuItem.setText(isDarkMode ? "关闭黑暗模式" : "开启黑暗模式");
+        }
+    }
+
+    /**
+     * 切换黑暗模式
+     */
+    private void toggleDarkMode() {
+        boolean currentDarkMode = GlobalVariable.isDarkMode();
+        boolean newDarkMode = !currentDarkMode;
+
+        // 更新全局变量
+        GlobalVariable.setDarkMode(newDarkMode);
+
+        // 保存设置到配置
+        try {
+            DataManager dataManager = DataManager.getInstance();
+            dataManager.setAppConfig("darkMode", String.valueOf(newDarkMode));
+        } catch (Exception e) {
+            System.err.println("保存黑暗模式设置失败: " + e.getMessage());
+        }
+
+        // 更新菜单项文本
+        updateDarkModeMenuItem();
+
+        // 刷新界面 - 使用UI类的公共刷新方法
+        javafx.application.Platform.runLater(() -> {
+            com.y5neko.qrts.ui.common.Center.refreshAll();
+
+            // 刷新所有UI组件（包括Header和Footer）
+            com.y5neko.qrts.UI.refreshAllUIComponents();
+        });
     }
 }

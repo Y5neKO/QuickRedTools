@@ -32,6 +32,14 @@
             <artifactId>jackson-annotations</artifactId>
             <version>2.9.10</version>
         </dependency>
+
+        <dependency>
+            <groupId>scenicView</groupId>
+            <artifactId>scenicView</artifactId>
+            <version>8.7.0</version>
+            <scope>system</scope>
+            <systemPath>${basedir}/lib/scenicView.jar</systemPath>
+        </dependency>
     </dependencies>
 
     <build>

@@ -3,12 +3,14 @@ package com.y5neko.qrts.ui.terminal;
 import com.y5neko.qrts.model.ToolItem;
 import com.y5neko.qrts.model.Environment;
 import com.y5neko.qrts.service.DataManager;
+import com.y5neko.qrts.config.GlobalVariable;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
+import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 
 /**
@@ -64,11 +66,18 @@ public class TerminalDialog {
 
         VBox root = new VBox(10);
         root.setPadding(new Insets(10));
-        root.setStyle("-fx-background-color: #1e1e1e;");
+
+        // 应用黑暗模式
+        applyDarkMode(root);
+
         root.getChildren().add(terminal);
         VBox.setVgrow(terminal, Priority.ALWAYS);
 
         Scene scene = new Scene(root);
+
+        // 应用场景黑暗模式
+        applySceneDarkMode(scene);
+
         stage.setScene(scene);
 
         // 设置窗口关闭事件
@@ -126,7 +135,9 @@ public class TerminalDialog {
 
         VBox root = new VBox(10);
         root.setPadding(new Insets(10));
-        root.setStyle("-fx-background-color: #1e1e1e;");
+
+        // 应用黑暗模式
+        applyDarkMode(root);
 
         // 工具信息区域
         TitledPane toolInfoPane = createToolInfoPane(tool);
@@ -138,6 +149,10 @@ public class TerminalDialog {
         VBox.setVgrow(terminal, Priority.ALWAYS);
 
         Scene scene = new Scene(root);
+
+        // 应用场景黑暗模式
+        applySceneDarkMode(scene);
+
         stage.setScene(scene);
 
         // 设置窗口关闭事件
@@ -182,11 +197,9 @@ public class TerminalDialog {
         toolInfoPane.setText("工具信息");
         toolInfoPane.setExpanded(false);
         toolInfoPane.setCollapsible(true);
-        toolInfoPane.setStyle("-fx-text-fill: #e6e6e6;");
 
         VBox infoBox = new VBox(5);
         infoBox.setPadding(new Insets(10));
-        infoBox.setStyle("-fx-background-color: #2d2d2d;");
 
         Label nameLabel = createInfoLabel("工具名称: " + tool.getName());
         Label descLabel = createInfoLabel("描述: " +
@@ -206,6 +219,9 @@ public class TerminalDialog {
         infoBox.getChildren().addAll(nameLabel, descLabel, envLabel, cmdLabel, argsLabel, workDirLabel);
         toolInfoPane.setContent(infoBox);
 
+        // 应用黑暗模式样式
+        updateTitledPaneStyle(toolInfoPane);
+
         return toolInfoPane;
     }
 
@@ -214,7 +230,7 @@ public class TerminalDialog {
      */
     private Label createInfoLabel(String text) {
         Label label = new Label(text);
-        label.setStyle("-fx-text-fill: #e6e6e6; -fx-font-family: 'Consolas', monospace;");
+        updateInfoLabelStyle(label);
         return label;
     }
 
@@ -226,7 +242,7 @@ public class TerminalDialog {
         buttonBox.setAlignment(javafx.geometry.Pos.CENTER_RIGHT);
         buttonBox.setPadding(new Insets(5, 0, 5, 0));
 
-        Button executeBtn = createStyledButton("执行工具", "#4a90e2");
+        Button executeBtn = createStyledButton("执行工具");
         executeBtn.setOnAction(new javafx.event.EventHandler<javafx.event.ActionEvent>() {
             @Override
             public void handle(javafx.event.ActionEvent event) {
@@ -236,8 +252,9 @@ public class TerminalDialog {
                 }
             }
         });
+        updateButtonStyle(executeBtn);
 
-        Button clearBtn = createStyledButton("清空终端", "#444");
+        Button clearBtn = createStyledButton("清空终端");
         clearBtn.setOnAction(new javafx.event.EventHandler<javafx.event.ActionEvent>() {
             @Override
             public void handle(javafx.event.ActionEvent event) {
@@ -246,8 +263,9 @@ public class TerminalDialog {
                 }
             }
         });
+        updateButtonStyle(clearBtn);
 
-        Button shellBtn = createStyledButton("启动 Shell", "#5cb85c");
+        Button shellBtn = createStyledButton("启动 Shell");
         shellBtn.setOnAction(new javafx.event.EventHandler<javafx.event.ActionEvent>() {
             @Override
             public void handle(javafx.event.ActionEvent event) {
@@ -257,8 +275,12 @@ public class TerminalDialog {
                 }
             }
         });
+        updateButtonStyle(shellBtn);
 
         buttonBox.getChildren().addAll(executeBtn, clearBtn, shellBtn);
+
+        // 应用黑暗模式到按钮容器
+        updateButtonBoxStyle(buttonBox);
 
         return buttonBox;
     }
@@ -266,40 +288,8 @@ public class TerminalDialog {
     /**
      * 创建样式化按钮
      */
-    private Button createStyledButton(String text, final String color) {
+    private Button createStyledButton(String text) {
         final Button button = new Button(text);
-        button.setStyle(String.format(
-                "-fx-background-color: %s; -fx-text-fill: white; " +
-                        "-fx-border-radius: 3; -fx-background-radius: 3; " +
-                        "-fx-cursor: hand; -fx-padding: 8 16px; -fx-font-weight: bold;",
-                color
-        ));
-
-        // 添加悬停效果
-        button.setOnMouseEntered(new javafx.event.EventHandler<javafx.scene.input.MouseEvent>() {
-            @Override
-            public void handle(javafx.scene.input.MouseEvent event) {
-                button.setStyle(String.format(
-                        "-fx-background-color: derive(%s, -10%%); -fx-text-fill: white; " +
-                                "-fx-border-radius: 3; -fx-background-radius: 3; " +
-                                "-fx-cursor: hand; -fx-padding: 8 16px; -fx-font-weight: bold;",
-                        color
-                ));
-            }
-        });
-
-        button.setOnMouseExited(new javafx.event.EventHandler<javafx.scene.input.MouseEvent>() {
-            @Override
-            public void handle(javafx.scene.input.MouseEvent event) {
-                button.setStyle(String.format(
-                        "-fx-background-color: %s; -fx-text-fill: white; " +
-                                "-fx-border-radius: 3; -fx-background-radius: 3; " +
-                                "-fx-cursor: hand; -fx-padding: 8 16px; -fx-font-weight: bold;",
-                        color
-                ));
-            }
-        });
-
         return button;
     }
 
@@ -358,13 +348,8 @@ public class TerminalDialog {
         alert.setHeaderText(null);
         alert.setContentText(message);
 
-        // 设置警告框样式
-        DialogPane dialogPane = alert.getDialogPane();
-        dialogPane.setStyle("-fx-background-color: #2d2d2d;");
-        javafx.scene.Node contentNode = dialogPane.lookup(".content.label");
-        if (contentNode != null) {
-            contentNode.setStyle("-fx-text-fill: #e6e6e6;");
-        }
+        // 应用黑暗模式样式
+        updateDialogStyle(alert);
 
         alert.showAndWait();
     }
@@ -393,5 +378,117 @@ public class TerminalDialog {
      */
     public Stage getStage() {
         return stage;
+    }
+
+    /**
+     * 应用黑暗模式
+     */
+    private void applyDarkMode(VBox root) {
+        if (GlobalVariable.isDarkMode()) {
+            root.setStyle("-fx-background-color: #1a202c;");
+        } else {
+            root.setStyle("-fx-background-color: #f8f9fa;");
+        }
+    }
+
+    /**
+     * 应用场景黑暗模式
+     */
+    private void applySceneDarkMode(Scene scene) {
+        if (GlobalVariable.isDarkMode()) {
+            scene.getRoot().getStyleClass().add("dark");
+            // 加载黑暗模式CSS
+            if (!scene.getStylesheets().contains("css/DarkMode.css")) {
+                scene.getStylesheets().add("css/DarkMode.css");
+            }
+        } else {
+            scene.getRoot().getStyleClass().remove("dark");
+            // 移除黑暗模式CSS
+            scene.getStylesheets().remove("css/DarkMode.css");
+        }
+    }
+
+    /**
+     * 更新TitledPane样式
+     */
+    private void updateTitledPaneStyle(TitledPane titledPane) {
+        if (GlobalVariable.isDarkMode()) {
+            titledPane.setStyle("-fx-text-fill: #e2e8f0; -fx-background-color: #2d3748;");
+            // 更新内容区域样式
+            VBox content = (VBox) titledPane.getContent();
+            if (content != null) {
+                content.setStyle("-fx-background-color: #4a5568;");
+            }
+        } else {
+            titledPane.setStyle("-fx-text-fill: #333; -fx-background-color: #f8f9fa;");
+            // 更新内容区域样式
+            VBox content = (VBox) titledPane.getContent();
+            if (content != null) {
+                content.setStyle("-fx-background-color: white;");
+            }
+        }
+    }
+
+    /**
+     * 更新信息标签样式
+     */
+    private void updateInfoLabelStyle(Label label) {
+        if (GlobalVariable.isDarkMode()) {
+            label.setStyle("-fx-text-fill: #e2e8f0; -fx-font-family: 'Consolas', monospace;");
+        } else {
+            label.setStyle("-fx-text-fill: #333; -fx-font-family: 'Consolas', monospace;");
+        }
+    }
+
+    /**
+     * 更新按钮样式
+     */
+    private void updateButtonStyle(Button button) {
+        if (GlobalVariable.isDarkMode()) {
+            button.setStyle("-fx-background-color: #4a5568; -fx-text-fill: #e2e8f0; -fx-border-color: #718096; -fx-border-radius: 4; -fx-background-radius: 4;");
+        } else {
+            button.setStyle("-fx-background-color: #f8f9fa; -fx-text-fill: #333; -fx-border-color: #ddd; -fx-border-radius: 4; -fx-background-radius: 4;");
+        }
+    }
+
+    /**
+     * 更新按钮容器样式
+     */
+    private void updateButtonBoxStyle(HBox buttonBox) {
+        if (GlobalVariable.isDarkMode()) {
+            buttonBox.setStyle("-fx-background-color: #2d3748;");
+        } else {
+            buttonBox.setStyle("-fx-background-color: #f8f9fa;");
+        }
+    }
+
+    /**
+     * 更新对话框样式
+     */
+    private void updateDialogStyle(Alert alert) {
+        if (GlobalVariable.isDarkMode()) {
+            alert.getDialogPane().setStyle("-fx-background-color: #2d3748;");
+            // 更新对话框内容区域
+            if (alert.getDialogPane().getContent() instanceof VBox) {
+                VBox content = (VBox) alert.getDialogPane().getContent();
+                content.setStyle("-fx-background-color: #2d3748; -fx-text-fill: #e2e8f0;");
+                // 递归更新所有标签
+                updateDialogLabels(content);
+            }
+        }
+    }
+
+    /**
+     * 递归更新对话框中的所有标签
+     */
+    private void updateDialogLabels(javafx.scene.layout.Pane parent) {
+        for (javafx.scene.Node node : parent.getChildren()) {
+            if (node instanceof Label) {
+                Label label = (Label) node;
+                label.setTextFill(Color.web("#e2e8f0"));
+            } else if (node instanceof javafx.scene.layout.Pane) {
+                updateDialogLabels((javafx.scene.layout.Pane) node);
+            }
+        }
     }
 }

@@ -7,8 +7,8 @@ import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.VBox;
+import javafx.scene.layout.*;
+import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.stage.FileChooser;
 import javafx.stage.Modality;
@@ -103,9 +103,16 @@ public class SettingsDialog {
 
         mainContainer.getChildren().addAll(titleLabel, fontSelectionBox, fontSizeBox, previewBox, buttonBox);
 
+        // 应用黑暗模式
+        applyDarkMode(mainContainer);
+
         // 设置场景和样式
         Scene scene = new Scene(mainContainer);
         scene.getStylesheets().add("/css/Style.css");
+
+        // 应用场景黑暗模式
+        applySceneDarkMode(scene);
+
         dialogStage.setScene(scene);
         dialogStage.setResizable(false);
         dialogStage.showAndWait();
@@ -117,7 +124,7 @@ public class SettingsDialog {
     private VBox createFontSelectionBox() {
         VBox box = new VBox(10);
         box.setPadding(new Insets(15));
-        box.setStyle("-fx-border-color: #e0e0e0; -fx-border-radius: 5; -fx-background-color: white;");
+        updateBoxStyle(box);
 
         Label fontLabel = new Label("字体选择:");
         fontLabel.setFont(new Font(selectedFont, 14));
@@ -156,7 +163,7 @@ public class SettingsDialog {
 
         // 上传字体按钮
         uploadFontButton = new Button("上传字体");
-        uploadFontButton.setStyle("-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-border-radius: 3; -fx-background-radius: 3; -fx-cursor: hand; -fx-padding: 8 12px;");
+        updateUploadButtonStyle(uploadFontButton);
         uploadFontButton.setOnAction(e -> uploadCustomFont());
 
         HBox fontSelectBox = new HBox(10);
@@ -173,7 +180,7 @@ public class SettingsDialog {
     private VBox createPreviewBox() {
         VBox box = new VBox(10);
         box.setPadding(new Insets(15));
-        box.setStyle("-fx-border-color: #e0e0e0; -fx-border-radius: 5; -fx-background-color: white;");
+        updateBoxStyle(box);
 
         Label previewLabel = new Label("字体预览:");
         previewLabel.setFont(new Font(selectedFont, 14));
@@ -216,7 +223,7 @@ public class SettingsDialog {
     private VBox createFontSizeBox() {
         VBox box = new VBox(15);
         box.setPadding(new Insets(15));
-        box.setStyle("-fx-border-color: #e0e0e0; -fx-border-radius: 5; -fx-background-color: white;");
+        updateBoxStyle(box);
 
         Label sizeLabel = new Label("字体大小调整:");
         sizeLabel.setFont(new Font(selectedFont, 14));
@@ -315,19 +322,22 @@ public class SettingsDialog {
 
         Button saveButton = new Button("保存");
         saveButton.setPrefWidth(80);
-        saveButton.setStyle("-fx-background-color: #4285f4; -fx-text-fill: white; -fx-background-radius: 3;");
+        updateButtonStyle(saveButton);
         saveButton.setOnAction(e -> saveSettings());
 
         Button applyButton = new Button("应用");
         applyButton.setPrefWidth(80);
+        updateButtonStyle(applyButton);
         applyButton.setOnAction(e -> applySettings());
 
         Button cancelButton = new Button("取消");
         cancelButton.setPrefWidth(80);
+        updateButtonStyle(cancelButton);
         cancelButton.setOnAction(e -> dialogStage.close());
 
         Button resetButton = new Button("重置");
         resetButton.setPrefWidth(80);
+        updateButtonStyle(resetButton);
         resetButton.setOnAction(e -> resetToDefaults());
 
         buttonBox.getChildren().addAll(saveButton, applyButton, cancelButton, resetButton);
@@ -409,6 +419,7 @@ public class SettingsDialog {
         }
     }
 
+  
     /**
      * 重置为默认值
      */
@@ -473,6 +484,7 @@ public class SettingsDialog {
         }
     }
 
+    
     /**
      * 显示提示对话框
      */
@@ -481,6 +493,10 @@ public class SettingsDialog {
         alert.setTitle(title);
         alert.setHeaderText(null);
         alert.setContentText(content);
+
+        // 应用黑暗模式样式
+        updateDialogStyle(alert);
+
         alert.showAndWait();
     }
 
@@ -557,6 +573,98 @@ public class SettingsDialog {
 
             } catch (IOException e) {
                 showAlert("上传失败", "上传字体文件时发生错误: " + e.getMessage(), Alert.AlertType.ERROR);
+            }
+        }
+    }
+
+    /**
+     * 应用黑暗模式
+     */
+    private void applyDarkMode(VBox mainContainer) {
+        if (GlobalVariable.isDarkMode()) {
+            mainContainer.setStyle("-fx-background-color: #1a202c;");
+        } else {
+            mainContainer.setStyle("-fx-background-color: #f8f9fa;");
+        }
+    }
+
+    /**
+     * 应用场景黑暗模式
+     */
+    private void applySceneDarkMode(Scene scene) {
+        if (GlobalVariable.isDarkMode()) {
+            scene.getRoot().getStyleClass().add("dark");
+            // 加载黑暗模式CSS
+            if (!scene.getStylesheets().contains("css/DarkMode.css")) {
+                scene.getStylesheets().add("css/DarkMode.css");
+            }
+        } else {
+            scene.getRoot().getStyleClass().remove("dark");
+            // 移除黑暗模式CSS
+            scene.getStylesheets().remove("css/DarkMode.css");
+        }
+    }
+
+    /**
+     * 更新Box样式
+     */
+    private void updateBoxStyle(VBox box) {
+        if (GlobalVariable.isDarkMode()) {
+            box.setStyle("-fx-border-color: #4a5568; -fx-border-radius: 5; -fx-background-color: #2d3748;");
+        } else {
+            box.setStyle("-fx-border-color: #e0e0e0; -fx-border-radius: 5; -fx-background-color: white;");
+        }
+    }
+
+    /**
+     * 更新按钮样式
+     */
+    private void updateButtonStyle(Button button) {
+        if (GlobalVariable.isDarkMode()) {
+            button.setStyle("-fx-background-color: #4a5568; -fx-text-fill: #e2e8f0; -fx-border-color: #718096; -fx-border-radius: 4; -fx-background-radius: 4;");
+        } else {
+            button.setStyle("-fx-background-color: #f8f9fa; -fx-text-fill: #333; -fx-border-color: #ddd; -fx-border-radius: 4; -fx-background-radius: 4;");
+        }
+    }
+
+    /**
+     * 更新上传按钮样式
+     */
+    private void updateUploadButtonStyle(Button button) {
+        if (GlobalVariable.isDarkMode()) {
+            button.setStyle("-fx-background-color: #4a5568; -fx-text-fill: #e2e8f0; -fx-border-color: #718096; -fx-border-radius: 3; -fx-background-radius: 3; -fx-cursor: hand; -fx-padding: 8 12px;");
+        } else {
+            button.setStyle("-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-border-radius: 3; -fx-background-radius: 3; -fx-cursor: hand; -fx-padding: 8 12px;");
+        }
+    }
+
+    
+    /**
+     * 更新对话框样式
+     */
+    private void updateDialogStyle(Alert alert) {
+        if (GlobalVariable.isDarkMode()) {
+            alert.getDialogPane().setStyle("-fx-background-color: #2d3748;");
+            // 更新对话框内容区域
+            if (alert.getDialogPane().getContent() instanceof VBox) {
+                VBox content = (VBox) alert.getDialogPane().getContent();
+                content.setStyle("-fx-background-color: #2d3748; -fx-text-fill: #e2e8f0;");
+                // 递归更新所有标签
+                updateDialogLabels(content);
+            }
+        }
+    }
+
+    /**
+     * 递归更新对话框中的所有标签
+     */
+    private void updateDialogLabels(Pane parent) {
+        for (Node node : parent.getChildren()) {
+            if (node instanceof Label) {
+                Label label = (Label) node;
+                label.setTextFill(Color.web("#e2e8f0"));
+            } else if (node instanceof Pane) {
+                updateDialogLabels((Pane) node);
             }
         }
     }

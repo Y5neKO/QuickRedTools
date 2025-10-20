@@ -1,5 +1,6 @@
 package com.y5neko.qrts.ui.dialog;
 
+import com.y5neko.qrts.config.GlobalVariable;
 import com.y5neko.qrts.model.Environment;
 import com.y5neko.qrts.model.ToolCategory;
 import com.y5neko.qrts.model.ToolItem;
@@ -7,13 +8,16 @@ import com.y5neko.qrts.service.DataManager;
 import com.y5neko.qrts.service.ToolLauncher;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
+import javafx.scene.paint.Color;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import javafx.beans.value.ChangeListener;
 
 import java.io.File;
 import java.util.List;
@@ -53,7 +57,14 @@ public class ToolDialog {
         root.setCenter(tabPane);
         root.setBottom(bottomBox);
 
+        // 应用黑暗模式
+        applyDarkMode(root);
+
         Scene scene = new Scene(root);
+
+        // 应用场景黑暗模式
+        applySceneDarkMode(scene);
+
         stage.setScene(scene);
         stage.showAndWait();
     }
@@ -80,24 +91,38 @@ public class ToolDialog {
 
         // 分类表格
         TableView<ToolCategory> categoryTable = new TableView<>();
+        // 表格占满容器宽度
+        categoryTable.setMaxWidth(Double.MAX_VALUE);
 
         TableColumn<ToolCategory, String> idCol = new TableColumn<>("ID");
         idCol.setCellValueFactory(data -> new javafx.beans.property.SimpleStringProperty(data.getValue().getId()));
         idCol.setPrefWidth(80);
+        idCol.setMinWidth(80);
+        idCol.setMaxWidth(80);
 
         TableColumn<ToolCategory, String> sortCol = new TableColumn<>("排序");
         sortCol.setCellValueFactory(data -> new javafx.beans.property.SimpleStringProperty(String.valueOf(data.getValue().getSortOrder())));
         sortCol.setPrefWidth(60);
+        sortCol.setMinWidth(60);
+        sortCol.setMaxWidth(60);
 
         TableColumn<ToolCategory, String> nameCol = new TableColumn<>("分类名称");
         nameCol.setCellValueFactory(data -> new javafx.beans.property.SimpleStringProperty(data.getValue().getName()));
         nameCol.setPrefWidth(120);
+        nameCol.setMinWidth(100);
+        nameCol.setMaxWidth(150);
 
         TableColumn<ToolCategory, String> descCol = new TableColumn<>("描述");
         descCol.setCellValueFactory(data -> new javafx.beans.property.SimpleStringProperty(data.getValue().getDescription()));
+        // 让描述列自动占满剩余空间
         descCol.setPrefWidth(200);
+        descCol.setMinWidth(150);
+        descCol.setMaxWidth(Double.MAX_VALUE);
 
         categoryTable.getColumns().addAll(idCol, sortCol, nameCol, descCol);
+        // 使用智能约束策略，让最后一列自动占满剩余空间
+        categoryTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        updateTableStyle(categoryTable);
         loadCategories(categoryTable);
 
         // 分类操作按钮
@@ -183,6 +208,7 @@ public class ToolDialog {
         argsCol.setPrefWidth(150);
 
         toolTable.getColumns().addAll(idCol, nameCol, descCol, categoryCol, envCol, cmdCol, argsCol);
+        updateTableStyle(toolTable);
         loadTools(toolTable);
 
         // 工具操作按钮
@@ -312,6 +338,9 @@ public class ToolDialog {
         grid.add(descField, 1, 2);
 
         dialog.getDialogPane().setContent(grid);
+
+        // 应用黑暗模式样式
+        updateDialogStyle(dialog);
 
         dialog.setResultConverter(dialogButton -> {
             if (dialogButton == saveButtonType) {
@@ -519,6 +548,26 @@ public class ToolDialog {
         grid.add(guiCheckBox, 1, 8);
 
         dialog.getDialogPane().setContent(grid);
+
+        // 应用黑暗模式样式
+        updateDialogStyle(dialog);
+
+        // 手动应用样式到ComboBox组件
+        if (GlobalVariable.isDarkMode()) {
+            applyComboBoxStyle(categoryComboBox);
+            applyComboBoxStyle(envComboBox);
+        }
+
+        // 确保样式在对话框显示后生效
+        dialog.showingProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal && GlobalVariable.isDarkMode()) {
+                // 延迟重新应用样式，确保UI完全加载
+                javafx.application.Platform.runLater(() -> {
+                    applyComboBoxStyle(categoryComboBox);
+                    applyComboBoxStyle(envComboBox);
+                });
+            }
+        });
 
         dialog.setResultConverter(dialogButton -> {
             if (dialogButton == saveButtonType) {
@@ -762,6 +811,10 @@ public class ToolDialog {
         alert.setTitle("提示");
         alert.setHeaderText(null);
         alert.setContentText(message);
+
+        // 应用黑暗模式样式
+        updateDialogStyle(alert);
+
         alert.showAndWait();
     }
 
@@ -770,6 +823,10 @@ public class ToolDialog {
         alert.setTitle("确认");
         alert.setHeaderText(null);
         alert.setContentText(message);
+
+        // 应用黑暗模式样式
+        updateDialogStyle(alert);
+
         return alert.showAndWait().get() == ButtonType.OK;
     }
 
@@ -826,6 +883,363 @@ public class ToolDialog {
         // 如果有回调也调用（保持兼容性）
         if (refreshCallback != null) {
             refreshCallback.run();
+        }
+    }
+
+    /**
+     * 应用黑暗模式
+     */
+    private void applyDarkMode(BorderPane root) {
+        if (GlobalVariable.isDarkMode()) {
+            root.setBackground(new Background(new BackgroundFill(Color.web("#2d3748"), null, null)));
+            root.setStyle("-fx-background-color: #2d3748;");
+        } else {
+            root.setBackground(new Background(new BackgroundFill(Color.WHITE, null, null)));
+            root.setStyle("-fx-background-color: white;");
+        }
+    }
+
+    /**
+     * 更新表格样式
+     */
+    private void updateTableStyle(TableView<?> table) {
+        // 不再使用内联样式，让CSS样式接管
+        // 确保表格容器有正确的CSS类
+        Pane parent = (Pane) table.getParent();
+        if (parent != null) {
+            if (GlobalVariable.isDarkMode()) {
+                parent.getStyleClass().add("dark-table-container");
+            } else {
+                parent.getStyleClass().remove("dark-table-container");
+            }
+        }
+    }
+
+    
+    
+    /**
+     * 更新按钮样式
+     */
+    private void updateButtonStyle(Button button) {
+        if (GlobalVariable.isDarkMode()) {
+            button.setStyle("-fx-background-color: #4a5568; -fx-text-fill: #e2e8f0; -fx-border-color: #718096; -fx-border-radius: 4; -fx-background-radius: 4;");
+        } else {
+            button.setStyle("-fx-background-color: #f8f9fa; -fx-text-fill: #333; -fx-border-color: #ddd; -fx-border-radius: 4; -fx-background-radius: 4;");
+        }
+    }
+
+    /**
+     * 更新标签页样式
+     */
+    private void updateTabPaneStyle(TabPane tabPane) {
+        if (GlobalVariable.isDarkMode()) {
+            tabPane.setStyle("-fx-background-color: #2d3748;");
+            for (Tab tab : tabPane.getTabs()) {
+                updateTabStyle(tab);
+            }
+        } else {
+            tabPane.setStyle("-fx-background-color: white;");
+            for (Tab tab : tabPane.getTabs()) {
+                updateTabStyle(tab);
+            }
+        }
+    }
+
+    /**
+     * 更新单个标签样式
+     */
+    private void updateTabStyle(Tab tab) {
+        if (GlobalVariable.isDarkMode()) {
+            tab.setStyle("-fx-background-color: #4a5568; -fx-text-fill: #e2e8f0;");
+        } else {
+            tab.setStyle("-fx-background-color: #f8f9fa; -fx-text-fill: #333;");
+        }
+    }
+
+    /**
+     * 应用场景黑暗模式
+     */
+    private void applySceneDarkMode(Scene scene) {
+        if (GlobalVariable.isDarkMode()) {
+            scene.getRoot().getStyleClass().add("dark");
+            // 加载黑暗模式CSS
+            if (!scene.getStylesheets().contains("css/DarkMode.css")) {
+                scene.getStylesheets().add("css/DarkMode.css");
+            }
+        } else {
+            scene.getRoot().getStyleClass().remove("dark");
+            // 移除黑暗模式CSS
+            scene.getStylesheets().remove("css/DarkMode.css");
+        }
+    }
+
+    /**
+     * 更新对话框样式
+     */
+    private void updateDialogStyle(Alert alert) {
+        if (GlobalVariable.isDarkMode()) {
+            alert.getDialogPane().setStyle("-fx-background-color: #2d3748;");
+            // 更新对话框内容区域
+            if (alert.getDialogPane().getContent() instanceof VBox) {
+                VBox content = (VBox) alert.getDialogPane().getContent();
+                content.setStyle("-fx-background-color: #2d3748; -fx-text-fill: #e2e8f0;");
+                // 递归更新所有标签
+                updateDialogLabels(content);
+            }
+
+            // 强制更新Alert中的所有标签文字颜色
+            updateAllAlertLabels(alert.getDialogPane());
+
+            // 更新按钮样式
+            updateAlertButtons(alert.getDialogPane());
+        }
+    }
+
+    /**
+     * 递归更新对话框中的所有标签
+     */
+    private void updateDialogLabels(Pane parent) {
+        for (javafx.scene.Node node : parent.getChildren()) {
+            if (node instanceof Label) {
+                Label label = (Label) node;
+                label.setTextFill(Color.web("#e2e8f0"));
+            } else if (node instanceof Pane) {
+                updateDialogLabels((Pane) node);
+            }
+        }
+    }
+
+    /**
+     * 更新Dialog对话框样式（用于编辑对话框）
+     */
+    private void updateDialogStyle(Dialog<?> dialog) {
+        if (GlobalVariable.isDarkMode()) {
+            dialog.getDialogPane().setStyle("-fx-background-color: #2d3748;");
+
+            // 递归更新所有标签和输入框
+            updateDialogContent(dialog.getDialogPane());
+        }
+    }
+
+    /**
+     * 递归更新对话框内容
+     */
+    private void updateDialogContent(Pane parent) {
+        for (javafx.scene.Node node : parent.getChildren()) {
+            if (node instanceof Label) {
+                Label label = (Label) node;
+                label.setTextFill(Color.web("#e2e8f0"));
+            } else if (node instanceof TextField) {
+                TextField textField = (TextField) node;
+                applyTextFieldStyle(textField);
+            } else if (node instanceof ComboBox) {
+                ComboBox<?> comboBox = (ComboBox<?>) node;
+                applyComboBoxStyle(comboBox);
+            } else if (node instanceof CheckBox) {
+                CheckBox checkBox = (CheckBox) node;
+                checkBox.setTextFill(Color.web("#e2e8f0"));
+            } else if (node instanceof Button) {
+                Button button = (Button) node;
+                applyButtonStyle(button);
+            } else if (node instanceof Pane) {
+                updateDialogContent((Pane) node);
+            }
+        }
+    }
+
+    /**
+     * 应用TextField样式并添加监听器
+     */
+    private void applyTextFieldStyle(TextField textField) {
+        if (GlobalVariable.isDarkMode()) {
+            textField.setStyle("-fx-background-color: #4a5568; -fx-text-fill: #e2e8f0; -fx-border-color: #718096;");
+
+            // 添加监听器，当样式被重置时重新应用
+            textField.focusedProperty().addListener((obs, oldVal, newVal) -> {
+                if (GlobalVariable.isDarkMode()) {
+                    textField.setStyle("-fx-background-color: #4a5568; -fx-text-fill: #e2e8f0; -fx-border-color: #718096;");
+                }
+            });
+
+            // 添加文本变化监听器
+            textField.textProperty().addListener((obs, oldVal, newVal) -> {
+                if (GlobalVariable.isDarkMode()) {
+                    textField.setStyle("-fx-background-color: #4a5568; -fx-text-fill: #e2e8f0; -fx-border-color: #718096;");
+                }
+            });
+
+            // 添加鼠标事件监听器
+            textField.setOnMouseClicked(e -> {
+                if (GlobalVariable.isDarkMode()) {
+                    textField.setStyle("-fx-background-color: #4a5568; -fx-text-fill: #e2e8f0; -fx-border-color: #718096;");
+                }
+            });
+        }
+    }
+
+    /**
+     * 应用ComboBox样式
+     */
+    private void applyComboBoxStyle(ComboBox<?> comboBox) {
+        if (GlobalVariable.isDarkMode()) {
+            // 使用更强制的样式
+            String darkStyle = "-fx-background-color: #4a5568 !important; -fx-text-fill: #e2e8f0 !important; -fx-border-color: #718096 !important; -fx-border-radius: 4 !important; -fx-background-radius: 4 !important;";
+            String focusedStyle = "-fx-background-color: #2d3748 !important; -fx-text-fill: #e2e8f0 !important; -fx-border-color: #4285f4 !important; -fx-border-radius: 4 !important; -fx-background-radius: 4 !important;";
+            String hoverStyle = "-fx-background-color: #718096 !important; -fx-text-fill: #e2e8f0 !important; -fx-border-color: #4a5568 !important; -fx-border-radius: 4 !important; -fx-background-radius: 4 !important;";
+
+            comboBox.setStyle(darkStyle);
+
+            // 强制设置子组件样式
+            applyComboBoxSubStyles(comboBox);
+
+            // 添加监听器
+            comboBox.focusedProperty().addListener((obs, oldVal, newVal) -> {
+                if (GlobalVariable.isDarkMode()) {
+                    if (newVal) {
+                        comboBox.setStyle(focusedStyle);
+                    } else {
+                        comboBox.setStyle(darkStyle);
+                    }
+                    applyComboBoxSubStyles(comboBox);
+                }
+            });
+
+            // 添加鼠标事件监听器
+            comboBox.setOnMouseEntered(e -> {
+                if (GlobalVariable.isDarkMode() && !comboBox.isFocused()) {
+                    comboBox.setStyle(hoverStyle);
+                    applyComboBoxSubStyles(comboBox);
+                }
+            });
+
+            comboBox.setOnMouseExited(e -> {
+                if (GlobalVariable.isDarkMode() && !comboBox.isFocused()) {
+                    comboBox.setStyle(darkStyle);
+                    applyComboBoxSubStyles(comboBox);
+                }
+            });
+
+            // 监听下拉列表的显示/隐藏
+            comboBox.showingProperty().addListener((obs, oldVal, newVal) -> {
+                if (GlobalVariable.isDarkMode()) {
+                    if (newVal) {
+                        comboBox.setStyle(focusedStyle);
+                    } else if (!comboBox.isFocused()) {
+                        comboBox.setStyle(darkStyle);
+                    }
+                    applyComboBoxSubStyles(comboBox);
+                }
+            });
+
+            // 监听值变化，重新应用样式
+            comboBox.valueProperty().addListener((obs, oldVal, newVal) -> {
+                if (GlobalVariable.isDarkMode()) {
+                    applyComboBoxSubStyles(comboBox);
+                }
+            });
+        }
+    }
+
+    /**
+     * 应用ComboBox子组件样式
+     */
+    private void applyComboBoxSubStyles(ComboBox<?> comboBox) {
+        // 延迟执行，确保组件完全加载
+        javafx.application.Platform.runLater(() -> {
+            try {
+                // 设置箭头按钮样式
+                Node arrowButton = comboBox.lookup(".arrow-button");
+                if (arrowButton != null) {
+                    arrowButton.setStyle("-fx-background-color: #4a5568 !important; -fx-border-color: #718096 !important;");
+                }
+
+                // 设置箭头样式
+                Node arrow = comboBox.lookup(".arrow");
+                if (arrow != null) {
+                    arrow.setStyle("-fx-background-color: #e2e8f0 !important;");
+                }
+
+                // 设置文本输入区域样式
+                Node textField = comboBox.lookup(".text-field");
+                if (textField != null) {
+                    textField.setStyle("-fx-background-color: #4a5568 !important; -fx-text-fill: #e2e8f0 !important; -fx-border-color: transparent !important;");
+                }
+            } catch (Exception e) {
+                // 忽略异常，可能组件还未完全初始化
+            }
+        });
+    }
+
+    /**
+     * 应用Button样式
+     */
+    private void applyButtonStyle(Button button) {
+        if (GlobalVariable.isDarkMode()) {
+            button.setStyle("-fx-background-color: #4a5568; -fx-text-fill: #e2e8f0; -fx-border-color: #718096; -fx-border-radius: 4; -fx-background-radius: 4;");
+
+            // 添加监听器，当鼠标悬停时改变样式
+            button.setOnMouseEntered(e -> {
+                if (GlobalVariable.isDarkMode()) {
+                    button.setStyle("-fx-background-color: #718096; -fx-text-fill: #e2e8f0; -fx-border-color: #4a5568; -fx-border-radius: 4; -fx-background-radius: 4;");
+                }
+            });
+
+            button.setOnMouseExited(e -> {
+                if (GlobalVariable.isDarkMode()) {
+                    button.setStyle("-fx-background-color: #4a5568; -fx-text-fill: #e2e8f0; -fx-border-color: #718096; -fx-border-radius: 4; -fx-background-radius: 4;");
+                }
+            });
+
+            button.setOnMousePressed(e -> {
+                if (GlobalVariable.isDarkMode()) {
+                    button.setStyle("-fx-background-color: #2d3748; -fx-text-fill: #e2e8f0; -fx-border-color: #4285f4; -fx-border-radius: 4; -fx-background-radius: 4;");
+                }
+            });
+
+            button.setOnMouseReleased(e -> {
+                if (GlobalVariable.isDarkMode()) {
+                    button.setStyle("-fx-background-color: #4a5568; -fx-text-fill: #e2e8f0; -fx-border-color: #718096; -fx-border-radius: 4; -fx-background-radius: 4;");
+                }
+            });
+        }
+    }
+
+    /**
+     * 更新Alert中的所有标签
+     */
+    private void updateAllAlertLabels(javafx.scene.Parent parent) {
+        if (GlobalVariable.isDarkMode()) {
+            for (javafx.scene.Node node : parent.getChildrenUnmodifiable()) {
+                if (node instanceof Label) {
+                    Label label = (Label) node;
+                    label.setTextFill(Color.web("#e2e8f0"));
+                } else if (node instanceof Pane) {
+                    updateAllAlertLabels((Pane) node);
+                }
+            }
+        }
+    }
+
+    /**
+     * 更新Alert中的按钮样式
+     */
+    private void updateAlertButtons(DialogPane dialogPane) {
+        if (GlobalVariable.isDarkMode()) {
+            // 获取按钮栏中的所有按钮
+            Node buttonBar = dialogPane.lookup(".button-bar");
+            if (buttonBar instanceof HBox) {
+                HBox hbox = (HBox) buttonBar;
+                for (javafx.scene.Node node : hbox.getChildren()) {
+                    if (node instanceof Button) {
+                        Button button = (Button) node;
+                        if (button.isDefaultButton()) {
+                            button.setStyle("-fx-background-color: #4285f4; -fx-text-fill: white; -fx-border-color: #2563eb; -fx-border-radius: 4; -fx-background-radius: 4;");
+                        } else {
+                            button.setStyle("-fx-background-color: #4a5568; -fx-text-fill: #e2e8f0; -fx-border-color: #718096; -fx-border-radius: 4; -fx-background-radius: 4;");
+                        }
+                    }
+                }
+            }
         }
     }
 }

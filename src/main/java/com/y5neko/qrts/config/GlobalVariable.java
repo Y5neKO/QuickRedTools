@@ -16,6 +16,9 @@ public class GlobalVariable {
     public static double TOOL_DESC_FONT_SIZE = 10;
     public static double BUTTON_FONT_SIZE = 12; // 独立的按钮字体大小
 
+    // 黑暗模式设置
+    public static boolean DARK_MODE = false;
+
     /**
      * 初始化字体设置（从配置文件加载）
      */
@@ -52,8 +55,14 @@ public class GlobalVariable {
             if (savedButtonSize != null) {
                 BUTTON_FONT_SIZE = Double.parseDouble(savedButtonSize);
             }
+
+            // 加载黑暗模式设置
+            String savedDarkMode = dataManager.getAppConfig("darkMode");
+            if (savedDarkMode != null) {
+                DARK_MODE = Boolean.parseBoolean(savedDarkMode);
+            }
         } catch (Exception e) {
-            System.err.println("加载字体设置失败，使用默认值: " + e.getMessage());
+            System.err.println("加载设置失败，使用默认值: " + e.getMessage());
         }
     }
 
@@ -68,6 +77,20 @@ public class GlobalVariable {
         CATEGORY_DESC_FONT_SIZE = categoryDescSize;
         TOOL_DESC_FONT_SIZE = toolDescSize;
         BUTTON_FONT_SIZE = buttonSize;
+    }
+
+    /**
+     * 设置黑暗模式
+     */
+    public static void setDarkMode(boolean darkMode) {
+        DARK_MODE = darkMode;
+    }
+
+    /**
+     * 获取黑暗模式状态
+     */
+    public static boolean isDarkMode() {
+        return DARK_MODE;
     }
 
     /**
