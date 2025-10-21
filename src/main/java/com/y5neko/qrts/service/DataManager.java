@@ -24,7 +24,7 @@ public class DataManager {
     private static final String APP_CONFIG_FILE = "app_config.json";
 
     private static DataManager instance;
-    private ObjectMapper objectMapper;
+    private final ObjectMapper objectMapper;
 
     // 缓存数据以提高性能
     private List<Environment> cachedEnvironments;
@@ -358,5 +358,29 @@ public class DataManager {
         Map<String, String> config = loadAppConfig();
         config.put(key, value);
         saveAppConfig(config);
+    }
+
+    public List<Environment> getCachedEnvironments() {
+        return cachedEnvironments;
+    }
+
+    public List<ToolCategory> getCachedCategories() {
+        return cachedCategories;
+    }
+
+    public List<ToolItem> getCachedTools() {
+        return cachedTools;
+    }
+
+    public boolean isEnvironmentsLoaded() {
+        return environmentsLoaded;
+    }
+
+    public boolean isCategoriesLoaded() {
+        return categoriesLoaded;
+    }
+
+    public boolean isToolsLoaded() {
+        return toolsLoaded;
     }
 }

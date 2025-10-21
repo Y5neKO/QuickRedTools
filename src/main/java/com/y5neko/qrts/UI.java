@@ -14,7 +14,6 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
-import org.scenicview.ScenicView;
 
 import static com.y5neko.qrts.config.GlobalVariable.icon;
 
@@ -233,7 +232,7 @@ public class UI extends Application {
                     Object root = currentScene.getRoot();
                     if (root instanceof StackPane) {
                         StackPane stackPane = (StackPane) root;
-                        if (stackPane.getChildren().size() > 0) {
+                        if (!stackPane.getChildren().isEmpty()) {
                             Object borderPaneObj = stackPane.getChildren().get(0);
                             if (borderPaneObj instanceof BorderPane) {
                                 BorderPane borderPane = (BorderPane) borderPaneObj;
@@ -264,14 +263,14 @@ public class UI extends Application {
                     Object root = currentScene.getRoot();
                     if (root instanceof StackPane) {
                         StackPane stackPane = (StackPane) root;
-                        if (stackPane.getChildren().size() > 0) {
+                        if (!stackPane.getChildren().isEmpty()) {
                             Object borderPaneObj = stackPane.getChildren().get(0);
                             if (borderPaneObj instanceof BorderPane) {
                                 BorderPane borderPane = (BorderPane) borderPaneObj;
                                 Object bottomObj = borderPane.getBottom();
                                 if (bottomObj instanceof HBox) {
                                     HBox bottomBar = (HBox) bottomObj;
-                                    if (bottomBar.getChildren().size() > 0) {
+                                    if (!bottomBar.getChildren().isEmpty()) {
                                         Label bottomLabel = (Label) bottomBar.getChildren().get(0);
                                         footerInstance.updateFooterStyles(bottomBar, bottomLabel);
                                         System.out.println("Footer组件刷新完成");
@@ -310,7 +309,6 @@ public class UI extends Application {
 
             } catch (Exception e) {
                 System.err.println("刷新组件时发生错误: " + e.getMessage());
-                e.printStackTrace();
             }
         });
     }

@@ -17,7 +17,6 @@ import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
-import javafx.beans.value.ChangeListener;
 
 import java.io.File;
 import java.util.List;
@@ -26,8 +25,8 @@ import java.util.Optional;
 public class ToolDialog {
     private Stage stage;
     private TabPane tabPane;
-    private DataManager dataManager;
-    private ToolLauncher toolLauncher;
+    private final DataManager dataManager;
+    private final ToolLauncher toolLauncher;
     private Runnable refreshCallback; // 用于刷新首页的回调
 
     public ToolDialog() {

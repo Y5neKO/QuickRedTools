@@ -138,7 +138,7 @@ public class Header {
         MenuItem checkUpdateButton = new MenuItem("检查更新");
         helpMenu.getItems().add(checkUpdateButton);
         checkUpdateButton.setOnAction(event -> {
-            openWebPage("https://github.com/Y5neKO/QuickRedTools/releases");
+            openWebPage();
         });
     }
 
@@ -170,12 +170,11 @@ public class Header {
 
     /**
      * 打开网页链接
-     * @param url 要打开的网址
      */
-    private void openWebPage(String url) {
+    private void openWebPage() {
         try {
             if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
-                Desktop.getDesktop().browse(new URI(url));
+                Desktop.getDesktop().browse(new URI("https://github.com/Y5neKO/QuickRedTools/releases"));
             } else {
                 System.err.println("不支持打开网页操作");
             }

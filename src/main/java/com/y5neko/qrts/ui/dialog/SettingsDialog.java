@@ -15,7 +15,6 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -29,7 +28,7 @@ import java.util.List;
  */
 public class SettingsDialog {
     private Stage dialogStage;
-    private DataManager dataManager;
+    private final DataManager dataManager;
 
     // 字体设置
     private ComboBox<String> fontComboBox;
@@ -38,13 +37,6 @@ public class SettingsDialog {
     private Slider categoryDescFontSizeSlider;
     private Slider toolDescFontSizeSlider;
     private Slider buttonFontSizeSlider;
-
-    // 滑块容器
-    private VBox titleFontSliderBox;
-    private VBox categoryFontSliderBox;
-    private VBox categoryDescFontSliderBox;
-    private VBox toolDescFontSliderBox;
-    private VBox buttonFontSliderBox;
 
     // 预览组件
     private Label titlePreview;
@@ -55,7 +47,6 @@ public class SettingsDialog {
 
     // 自定义字体管理
     private static final String CUSTOM_FONT_DIR = "fonts";
-    private Button uploadFontButton;
 
     // 当前设置值
     private String selectedFont = "Microsoft YaHei";
@@ -162,7 +153,7 @@ public class SettingsDialog {
         });
 
         // 上传字体按钮
-        uploadFontButton = new Button("上传字体");
+        Button uploadFontButton = new Button("上传字体");
         updateUploadButtonStyle(uploadFontButton);
         uploadFontButton.setOnAction(e -> uploadCustomFont());
 
@@ -229,22 +220,23 @@ public class SettingsDialog {
         sizeLabel.setFont(new Font(selectedFont, 14));
 
         // 标题字体大小
-        titleFontSliderBox = createFontSizeSlider("标题字体", titleFontSize, 20, 8);
+        // 滑块容器
+        VBox titleFontSliderBox = createFontSizeSlider("标题字体", titleFontSize, 20, 8);
 
         // 分类标题字体大小
-        categoryFontSliderBox = createFontSizeSlider("分类标题", categoryFontSize, 18, 8);
+        VBox categoryFontSliderBox = createFontSizeSlider("分类标题", categoryFontSize, 18, 8);
 
         // 分类描述字体大小
-        categoryDescFontSliderBox = createFontSizeSlider("分类描述", categoryDescFontSize, 16, 8);
+        VBox categoryDescFontSliderBox = createFontSizeSlider("分类描述", categoryDescFontSize, 16, 8);
 
         // 工具描述字体大小
-        toolDescFontSliderBox = createFontSizeSlider("工具描述", toolDescFontSize, 14, 6);
+        VBox toolDescFontSliderBox = createFontSizeSlider("工具描述", toolDescFontSize, 14, 6);
 
         // 按钮字体大小
-        buttonFontSliderBox = createFontSizeSlider("按钮字体", buttonFontSize, 16, 8);
+        VBox buttonFontSliderBox = createFontSizeSlider("按钮字体", buttonFontSize, 16, 8);
 
         box.getChildren().addAll(sizeLabel, titleFontSliderBox, categoryFontSliderBox,
-                                categoryDescFontSliderBox, toolDescFontSliderBox, buttonFontSliderBox);
+                categoryDescFontSliderBox, toolDescFontSliderBox, buttonFontSliderBox);
         return box;
     }
 

@@ -26,10 +26,10 @@ public class EnhancedVirtualTerminal extends VBox {
     private TextArea terminalArea;
     private TextField commandInput; // 新增：独立的命令输入框
     private Label promptLabel; // 提示符标签
-    private ExecutorService executor;
-    private AtomicBoolean isRunning;
-    private AtomicBoolean isExecuting; // 标记是否正在执行命令
-    private StringBuilder currentOutput;
+    private final ExecutorService executor;
+    private final AtomicBoolean isRunning;
+    private final AtomicBoolean isExecuting; // 标记是否正在执行命令
+    private final StringBuilder currentOutput;
     private String workingDirectory;
     private String prompt;
     private Runnable onCloseCallback;
@@ -38,7 +38,7 @@ public class EnhancedVirtualTerminal extends VBox {
     private volatile Process currentProcess;
 
     // 命令历史
-    private List<String> commandHistory;
+    private final List<String> commandHistory;
     private int historyIndex = -1;
 
     // 颜色标记（使用特殊字符标记）
@@ -155,8 +155,7 @@ public class EnhancedVirtualTerminal extends VBox {
     }
 
     private Button createStyledButton(String text) {
-        final Button button = new Button(text);
-        return button;
+        return new Button(text);
     }
 
     private void setupEventHandlers() {
@@ -367,9 +366,9 @@ public class EnhancedVirtualTerminal extends VBox {
         if (current.isEmpty()) return;
 
         String[] commonCommands = {"help", "clear", "cd", "ls", "pwd", "echo", "cat", "exit", "history"};
-        for (int i = 0; i < commonCommands.length; i++) {
-            if (commonCommands[i].startsWith(current)) {
-                commandInput.setText(commonCommands[i]);
+        for (String commonCommand : commonCommands) {
+            if (commonCommand.startsWith(current)) {
+                commandInput.setText(commonCommand);
                 commandInput.positionCaret(commandInput.getText().length());
                 break;
             }
@@ -738,16 +737,12 @@ public class EnhancedVirtualTerminal extends VBox {
                         cmdList.add(environmentPath);
                         if (environmentParams != null && !environmentParams.trim().isEmpty()) {
                             String[] params = environmentParams.split("\\s+");
-                            for (int i = 0; i < params.length; i++) {
-                                cmdList.add(params[i]);
-                            }
+                            cmdList.addAll(Arrays.asList(params));
                         }
                     }
 
                     String[] commandParts = command.split("\\s+");
-                    for (int i = 0; i < commandParts.length; i++) {
-                        cmdList.add(commandParts[i]);
-                    }
+                    cmdList.addAll(Arrays.asList(commandParts));
 
                     ProcessBuilder pb = new ProcessBuilder(cmdList);
                     pb.directory(new File(workingDirectory));
@@ -948,5 +943,9 @@ public class EnhancedVirtualTerminal extends VBox {
         } else {
             inputField.setStyle("-fx-background-color: white; -fx-text-fill: #333; -fx-border-color: #ddd; -fx-border-width: 1px; -fx-border-radius: 4; -fx-background-radius: 4; -fx-prompt-text-fill: #999;");
         }
+    }
+
+    public boolean isUpdatingText() {
+        return isUpdatingText;
     }
 }

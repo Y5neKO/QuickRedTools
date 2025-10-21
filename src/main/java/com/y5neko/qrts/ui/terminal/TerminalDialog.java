@@ -291,8 +291,7 @@ public class TerminalDialog {
      * 创建样式化按钮
      */
     private Button createStyledButton(String text) {
-        final Button button = new Button(text);
-        return button;
+        return new Button(text);
     }
 
     /**

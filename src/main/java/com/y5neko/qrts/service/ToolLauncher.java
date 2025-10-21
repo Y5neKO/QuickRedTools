@@ -11,7 +11,7 @@ import java.util.List;
 
 public class ToolLauncher {
     private static ToolLauncher instance;
-    private DataManager dataManager;
+    private final DataManager dataManager;
 
     private ToolLauncher() {
         dataManager = DataManager.getInstance();
@@ -146,9 +146,7 @@ public class ToolLauncher {
         if (tool.getCommand() != null && !tool.getCommand().trim().isEmpty()) {
             File toolCommand = new File(tool.getCommand());
             // 如果是绝对路径，检查文件是否存在
-            if (toolCommand.isAbsolute() && !toolCommand.exists()) {
-                return false;
-            }
+            return !toolCommand.isAbsolute() || toolCommand.exists();
         }
 
         return true;

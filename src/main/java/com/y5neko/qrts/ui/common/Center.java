@@ -8,11 +8,10 @@ import com.y5neko.qrts.service.DataManager;
 import com.y5neko.qrts.service.ToolLauncher;
 import com.y5neko.qrts.ui.dialog.EnvironmentDialog;
 import com.y5neko.qrts.ui.dialog.ToolDialog;
-import com.y5neko.qrts.ui.terminal.EnhancedVirtualTerminal;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
 import java.util.UUID;
-import javafx.geometry.Orientation;
+
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
@@ -35,9 +34,9 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class Center {
-    private DataManager dataManager;
-    private ToolLauncher toolLauncher;
-    private Map<String, VBox> categoryPanes;
+    private final DataManager dataManager;
+    private final ToolLauncher toolLauncher;
+    private final Map<String, VBox> categoryPanes;
     private VBox centerBox;
     private ScrollPane mainScrollPane;
     private TextField searchField; // 搜索框
@@ -510,9 +509,7 @@ public class Center {
         mainScrollPane.setContent(mainContent);
 
         // 延迟加载实际内容，提高启动速度
-        Platform.runLater(() -> {
-            refreshToolDisplay();
-        });
+        Platform.runLater(this::refreshToolDisplay);
 
         return mainScrollPane;
     }
@@ -1000,14 +997,18 @@ public class Center {
         alert.showAndWait();
     }
 
+    public Map<String, VBox> getCategoryPanes() {
+        return categoryPanes;
+    }
+
     /**
      * 运行工具信息类
      */
     private static class RunningToolInfo {
         private final String id; // 唯一标识符
-        private String name;
+        private final String name;
         private Process process;
-        private long startTime;
+        private final long startTime;
         private boolean running;
         private String status;
 
